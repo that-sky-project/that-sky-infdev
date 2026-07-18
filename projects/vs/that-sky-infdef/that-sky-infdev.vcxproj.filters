@@ -1,0 +1,70 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="src">
+      <UniqueIdentifier>{616fb37e-5ad9-4bff-8171-fe2208833485}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\mod">
+      <UniqueIdentifier>{04bbde7a-b8a4-4afd-a147-a75adb8af944}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\mod\base">
+      <UniqueIdentifier>{11b33bca-0a02-4be9-bba8-68c2df13de18}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\sky">
+      <UniqueIdentifier>{d3972cda-d40d-442c-97aa-55d99aa19b89}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\sky\functions">
+      <UniqueIdentifier>{6f1d169b-e4a5-4288-94b0-e126d7867c58}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\utils">
+      <UniqueIdentifier>{2fc7b914-9449-44ad-9724-47e5f246d7e6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\mc">
+      <UniqueIdentifier>{ebe375ce-19e3-4f12-b722-829c3d501a59}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\render">
+      <UniqueIdentifier>{ffe03444-b2fe-412f-853f-ca32ca44f79b}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\src\dllmain.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\mod\entry.cpp">
+      <Filter>src\mod</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\mod\mod.cpp">
+      <Filter>src\mod</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\mod\base\baseHooks.cpp">
+      <Filter>src\mod\base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\mod\base\override.cpp">
+      <Filter>src\mod\base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\mod\base\proxyMetaSystem.cpp">
+      <Filter>src\mod\base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\sky\functions\skyGame.cpp">
+      <Filter>src\sky\functions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\sky\functions\skyPrivate.cpp">
+      <Filter>src\sky\functions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\sky\functions\skyVertex.cpp">
+      <Filter>src\sky\functions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\utils\htmodloader.cpp">
+      <Filter>src\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\render\renderTest.cpp">
+      <Filter>src\render</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\sky\functions\skyScene.cpp">
+      <Filter>src\sky\functions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\sky\functions\skyMaterialDefBarn.cpp">
+      <Filter>src\sky\functions</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

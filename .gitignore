@@ -1,0 +1,22 @@
+# Files
+
+# Wildcard files.
+*.a
+*.o
+*.dll
+*.exe
+*.bak
+*.ini
+test*
+!libraries/leveldb/lib/*.a
+*.vcxproj.user
+
+# Folders
+.vs/
+.vscode/
+.idea/
+.VSCodeCounter/
+dist/
+pack/
+disabled/
+packaging/

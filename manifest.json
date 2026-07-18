@@ -1,0 +1,15 @@
+{
+  "package_name": "that-sky-infdev",
+  "version": "1.0.0",
+  "game_edition": 2,
+  "mod_name": "ThatSkyInfdev",
+  "description": "Render and infinite world test.",
+  "main": "that-sky-infdev.dll",
+  "dependencies": {
+    "htmodloader": ">=1.10.0"
+  },
+  "keywords": [],
+  "author": "HTMonkeyG",
+  "license": "MIT",
+  "website": ""
+}
