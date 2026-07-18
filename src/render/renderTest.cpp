@@ -96,6 +96,8 @@ static void hook_NetModule_Update(
 
   if (!gRenderTest) {
     //gRenderTest = new RenderTest();
+    // Allocate the RenderTest object in a single memory page to set memory
+    // R/W breakpoints.
     //void *buffer = VirtualAlloc((void *)0x0000001145140000ull, 0x1000, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
     void *buffer = VirtualAlloc(nullptr, 0x1000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
     Assert(buffer);
