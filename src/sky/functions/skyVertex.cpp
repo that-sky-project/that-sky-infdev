@@ -1,5 +1,6 @@
 #include <Windows.h>
 #include "utils/rva.hpp"
+#include "sky/skyPrivate.hpp"
 #include "sky/skyVertex.hpp"
 
 // ----------------------------------------------------------------------------
@@ -73,12 +74,6 @@ VertexRender::VertexRender() {
   ((PFN)s_VertexRender_ctor())(this);
 }
 
-PipelineInstance *VertexRender::GetPipelineInstance() {
-  using PFN = PipelineInstance *(*)(VertexRender *);
-  static const Rva s_VertexRender_GetPipelineInstance = 0x000E8C90;
-  return ((PFN)s_VertexRender_GetPipelineInstance())(this);
-}
-
 void VertexRender::Initialize(
   VertexData *renderData,
   const ShaderProgram *shader,
@@ -105,7 +100,7 @@ void VertexRender::Initialize(
     VertexRender *, VertexData *, ResourceManager *, cstring, RenderList *, u32, void *);
   static const Rva s_VertexRender_Initialize = 0x000FF140;
   ((PFN)s_VertexRender_Initialize())(
-    this, renderData, resources, resourceName, renderList, a5, a6);
+    this, renderData, resources, resourceName, renderList, a5, a6);sizeof(VertexRender);
 }
 
 void VertexRender::AllocVertexSparse(

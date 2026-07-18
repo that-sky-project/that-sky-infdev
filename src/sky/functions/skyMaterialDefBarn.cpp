@@ -1,4 +1,5 @@
 #include "utils/rva.hpp"
+#include "sky/skyVertex.hpp"
 #include "sky/skyMaterialDefBarn.hpp"
 
 void MaterialDefBarn::SetMaterialShaderUniforms(

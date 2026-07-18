@@ -1,9 +1,16 @@
 #ifndef __SKY_SKYVERTEX_HPP__
 #define __SKY_SKYVERTEX_HPP__
 
+#include <intrin.h>
 #include <Utils/Types.h>
 #include "sky/skyGfx.hpp"
 #include "sky/skyTypePlaceholders.hpp"
+
+class PipelineInstance {
+private:
+  u64 _align;
+  u08 _gap[272 - 8];
+};
 
 class GpuBuffer {
 public:
@@ -47,10 +54,28 @@ private:
 
 class VertexRender {
 public:
+  enum: u08 {
+    kPrimitiveType_PointList = 0,
+    kPrimitiveType_LineList,
+    kPrimitiveType_LineStrip = 3,
+    kPrimitiveType_TriangleList,
+    kPrimitiveType_TriangleStrip,
+    kPrimitiveType_TriangleFan,
+  };
+
   explicit VertexRender();
   ~VertexRender() = default;
 
-  PipelineInstance *GetPipelineInstance();
+  inline bool IsInitialized() { return m_isInitialized; }
+  inline bool IsQueued() { return m_queued; }
+  inline void SetPrimitiveType(u08 type) { m_primitiveType = type; }
+
+  // Access to the PipelineInstance object in the VertexRender. Must be called
+  // after VertexRender::Initialize().
+  inline PipelineInstance *GetPipelineInstance() {
+    Assert(IsInitialized());
+    return &m_pipelineInstance;
+  }
 
   void Initialize(
     VertexData *renderData,
@@ -68,15 +93,39 @@ public:
     void *a6);
 
   void AllocVertexSparse(
-    bool a2,
+    bool useChunks,
     Heap *heap,
-    u32 a4);
+    u32 maxChunkCount);
 
   void Queue();
 
-private:
-  __m128 _align;
-  u08 _gap[528 - 16];
+protected:
+  VertexData *m_vertexData = nullptr;
+  RenderList *m_renderList = nullptr;
+  ShaderProgram *m_shaderProgram = nullptr;
+  cstring m_debugName = nullptr;
+  __m128 m_matrix[4] = {0};
+  u08 unk_2[84] = {0};
+  i32 m_renderPipeline = 0;
+  PipelineInstance m_pipelineInstance = {};
+  u32 m_indexIdx = 0;
+  i32 m_maxPrimitive = 0;
+  i32 m_maxInstance = 0;
+  i32 m_vertexOffset = 0;
+  i32 m_indexOffset = 0;
+  i32 unk_4 = 0;
+  u08 m_primitiveType = kPrimitiveType_TriangleList;
+  bool m_useChunk = false;
+  bool unk_5 = false;
+  bool m_queued = false;
+  bool unk_6 = false;
+  bool m_isInitialized = false;
+  u08 unk_7[10] = {0};
+  Heap *m_heap = nullptr;
+  void *m_chunkData = nullptr;
+  u16 m_chunkCount = 0;
+  u16 m_maxChunkCount = 0;
+  u08 unk_9[12] = {0};
 };
 
 #endif
