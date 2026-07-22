@@ -1,3 +1,6 @@
 [submodule "libraries/that-sky-engine"]
 	path = libraries/that-sky-engine
 	url = https://www.github.com/that-sky-project/that-sky-engine
+[submodule "libraries/lrucache11"]
+	path = libraries/lrucache11
+	url = https://github.com/mohaps/lrucache11
