@@ -123,8 +123,5 @@ layout (location = 0) out highp vec2 v_uv0;
 
 void main() {
   v_uv0 = a_uv0;
-  highp vec4 tmpvar_1 = vec4(a_position, 1.0);
-  highp vec3 tmpvar_2 = (gsu.u_model * tmpvar_1).xyz;
-  highp vec4 tmpvar_3 = vec4(tmpvar_2, 1.0);
-  gl_Position = (u_viewProj * tmpvar_3);
+  gl_Position = (gsu.u_viewProj * vec4(a_position, 1.0));
 }
