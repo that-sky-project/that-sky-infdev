@@ -66,5 +66,8 @@
     <ClCompile Include="..\..\..\src\sky\functions\skyMaterialDefBarn.cpp">
       <Filter>src\sky\functions</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\render\terrainRender.cpp">
+      <Filter>src\render</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

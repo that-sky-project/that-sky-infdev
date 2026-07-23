@@ -3,18 +3,16 @@
 
 #include <intrin.h>
 #include <Utils/Types.h>
+#include "sky/skyPrivate.hpp"
 #include "sky/skyGfx.hpp"
+#include "sky/skyVectorMath.hpp"
+#include "sky/skyRendererUtils.hpp"
 #include "sky/skyTypePlaceholders.hpp"
 
 class PipelineInstance {
 private:
   u64 _align;
   u08 _gap[272 - 8];
-};
-
-class GpuBuffer {
-public:
-  enum Strategy: u08 { };
 };
 
 class VertexData {
@@ -104,7 +102,7 @@ protected:
   RenderList *m_renderList = nullptr;
   ShaderProgram *m_shaderProgram = nullptr;
   cstring m_debugName = nullptr;
-  __m128 m_matrix[4] = {0};
+  Matrix4 m_matrix;
   u08 unk_2[84] = {0};
   i32 m_renderPipeline = 0;
   PipelineInstance m_pipelineInstance = {};

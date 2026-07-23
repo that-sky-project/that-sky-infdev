@@ -142,6 +142,24 @@ enum GfxTexelFormat: u08 {
   kGfxTexelFormat_BC7_RGBA_sRGB,
 };
 
+enum GfxBufferType: u08 {
+  kGfxBufferType_Undefined = 0,
+  kGfxBufferType_Staging,
+  kGfxBufferType_Storage,
+  kGfxBufferType_Uniform,
+  kGfxBufferType_Vertex,
+  kGfxBufferType_Index,
+  kGfxBufferType_Indirect,
+};
+
+enum GfxBind: u08 {
+  kGfxBind_Undefined = 0,
+  kGfxBind_UploadSingle,
+  kGfxBind_UploadTriple,
+  kGfxBind_DownloadTriple,
+  kGfxBind_UploadFlexible,
+};
+
 /*
 // ---- by AI, 0.15.1 texel formats.
 // GPU texel (pixel) formats.

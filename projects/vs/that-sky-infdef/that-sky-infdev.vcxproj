@@ -106,6 +106,7 @@
     <ClCompile Include="..\..\..\src\mod\entry.cpp" />
     <ClCompile Include="..\..\..\src\mod\mod.cpp" />
     <ClCompile Include="..\..\..\src\render\renderTest.cpp" />
+    <ClCompile Include="..\..\..\src\render\terrainRender.cpp" />
     <ClCompile Include="..\..\..\src\sky\functions\skyGame.cpp" />
     <ClCompile Include="..\..\..\src\sky\functions\skyMaterialDefBarn.cpp" />
     <ClCompile Include="..\..\..\src\sky\functions\skyPrivate.cpp" />

@@ -6,6 +6,7 @@
 #include "sky/skyVertex.hpp"
 #include "sky/skyScene.hpp"
 #include "sky/skyMaterialDefBarn.hpp"
+#include "render/terrainRender.hpp"
 
 class RenderTest {
 public:
@@ -21,16 +22,7 @@ public:
   void onLevelUnload();
 
 private:
-  Game *game = nullptr;
-  Scene *scene = nullptr;
-  ResourceManager *resourceManager = nullptr;
-  Heap *heap = nullptr;
-  MaterialDefBarn *materialDefBarn = nullptr;
-
-  VertexRender depthR;
-  VertexRender matR;
-  VertexData depthD;
-  VertexData matD;
+  //std::vector<TerrainRenderChunk *> chunks = {};
 };
 
 #endif
