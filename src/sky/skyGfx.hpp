@@ -43,6 +43,27 @@ enum GfxType: u08 {
   kGfxType_HALF3x3,
   kGfxType_HALF4x3,
   kGfxType_HALF4x4,
+  kGfxType_COUNT,
+};
+
+static constexpr u32 kGfxTypeSizes[kGfxType_COUNT - 1] = {
+  // FLOAT vectors.
+  4, 8, 12, 16,
+  // INT vectors.
+  4, 8, 12, 16,
+  4, 8, 12, 16,
+  // HALF vectors.
+  2, 4, 6, 8,
+  // SHORT vectors.
+  2, 4, 6, 8,
+  // BYTE vectors.
+  1, 2, 3, 4,
+  1, 2, 3, 4,
+  // USHORT vectors.
+  2, 4, 6, 8,
+  // MATRIX types.
+  36, 48, 64,
+  18, 24, 32
 };
 
 enum GfxAttr: u08 {

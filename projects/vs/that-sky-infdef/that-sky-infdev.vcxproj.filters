@@ -69,5 +69,11 @@
     <ClCompile Include="..\..\..\src\render\terrainRender.cpp">
       <Filter>src\render</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\sky\functions\skyGpuBuffer.cpp">
+      <Filter>src\sky\functions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\sky\functions\skyRendererUtils.cpp">
+      <Filter>src\sky\functions</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

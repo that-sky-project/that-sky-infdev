@@ -171,15 +171,25 @@ void SetRenderer(Renderer *renderer);
 
 class GpuBuffer {
 public:
-  enum Strategy: u08 { };
+  // Actually no difference between GpuBuffer::Strategy and GfxBind. Simply use
+  // an alias.
+  using Strategy = GfxBind;
 
-  GpuBuffer() = default;
   ~GpuBuffer() = default;
+  GpuBuffer() = default;
+  GpuBuffer(GpuBuffer &&) = delete;
+  GpuBuffer(const GpuBuffer &) = delete;
+  GpuBuffer &operator=(const GpuBuffer &) = delete;
+
+  inline u32 GetPaddedSize() { return (m_bufferSize + 16 * m_alignment - 1) & (-16 * m_alignment); }
+  inline u32 GetSize() { return m_bufferSize; }
+  inline i32 GetReadableBuffer() { return m_readableBuffer; }
+  inline u32 GetReadableBufferOffset() { return GetPaddedSize() * m_readIndex; }
 
   void Initialize(
     cstring name,
     GfxBufferType type,
-    GfxBind usage,
+    GpuBuffer::Strategy usage,
     u32 size,
     const void *data = nullptr);
   void Terminate();
@@ -187,8 +197,7 @@ public:
   void *MapBuffer();
   void UnmapBuffer();
 
-  inline u32 GetPaddedSize() { return (m_bufferSize + 16 * m_alignment - 1) & (-16 * m_alignment); }
-  inline u32 GetSize() { return m_bufferSize; }
+  u32 GetTotalMemSize();
 
 private:
   i32 m_readableBuffer = -1;
@@ -207,7 +216,41 @@ private:
   bool m_isCpuCoherent: 1;
 
   u08 m_alignment = 0;
-  cstring m_identifier = nullptr;
+  cstring m_identifier = "";
+};
+
+// ----------------------------------------------------------------------------
+// [SECTION] RendererUtils/RenderList
+// ----------------------------------------------------------------------------
+
+class VertexRender;
+
+struct RenderFormat {
+  char unk[8];
+};
+
+struct RenderPipelineState {
+  char unk[60];
+};
+
+class RenderList {
+public:
+  ~RenderList() = default;
+  RenderList() = default;
+  RenderList(RenderList &&) = delete;
+  RenderList(const RenderList &) = delete;
+  RenderList &operator=(const RenderList &) = delete;
+
+private:
+  VertexRender **m_vertexRender = nullptr;
+  u32 m_queuedCount = 0;
+  VertexRender **m_queuedRender = nullptr;
+  u32 m_capacity = 0;
+  int unk_2 = 0;
+  char m_name[28] = {0};
+  RenderPipelineState m_renderPipelineState;
+  RenderFormat m_renderFormat;
+  bool m_foundContext = false;
 };
 
 #endif

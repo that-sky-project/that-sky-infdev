@@ -7,25 +7,47 @@
 // [SECTION] VertexData
 // ----------------------------------------------------------------------------
 
-VertexData::VertexData() {
-  using PFN = void (*)(VertexData *);
-  static const Rva s_VertexData_ctor = 0x000FE2B0;
-  ((PFN)s_VertexData_ctor())(this);
+u32 VertexData::GetTotalSize() {
+  u32 result = 0;
+
+  for (auto &it: m_vtxBuffers)
+    result += it.GetTotalMemSize();
+  for (auto &it: m_unknown)
+    result += it.buffer.GetTotalMemSize();
+  for (auto &it: m_idxBuffers)
+    result += it.buffer.GetTotalMemSize();
+
+  return result;
 }
 
-VertexData::~VertexData() {
-  using PFN = void (*)(VertexData *);
-  static const Rva s_VertexData_dtor = 0x000FE470;
-  ((PFN)s_VertexData_dtor())(this);
+void VertexData::Release() {
+  if (!m_complete)
+    return;
+
+  for (auto &it: m_vtxBuffers)
+    it.Terminate();
+
+  for (auto &it: m_unknown)
+    it.Reset();
+  for (auto &it: m_idxBuffers)
+    it.Reset();
+  for (auto &it: m_bufferInfo)
+    it.Reset();
+  for (auto &it: m_attributes)
+    it.Reset();
+
+  m_attributeCount = 0;
+  m_maxInstances = 0;
+  m_active = nullptr;
+  m_complete = false;
 }
 
 void VertexData::BeginDefinition(
   cstring name,
   u32 maxVertices
 ) {
-  using PFN = void (*)(VertexData *, cstring, u32);
-  static const Rva s_VertexData_BeginDefinition = 0x000FE620;
-  ((PFN)s_VertexData_BeginDefinition())(this, name, maxVertices);
+  AssertMsg(m_complete, "VertexData must be Release()'d before it can be redefined");
+  m_maxVertices = maxVertices;
 }
 
 void VertexData::AddVertexBuffer(
@@ -34,34 +56,79 @@ void VertexData::AddVertexBuffer(
   const GfxAttr *attrs,
   u32 attrCount,
   GpuBuffer::Strategy strategy,
-  u32 flags,
-  const void *vtxData
+  u32 perInstance,
+  const void *data
 ) {
-  using PFN = void (*)(
-    VertexData *, u32, const GfxType *, const GfxAttr *, u32, GpuBuffer::Strategy, u32, const void *);
-  static const Rva s_VertexData_AddVertexBuffer = 0x000FE890;
-  ((PFN)s_VertexData_AddVertexBuffer())(
-    this, idx, types, attrs, attrCount, strategy, flags, vtxData);
+  Assert(idx < kMaxVertexBuffers);
+
+  u32 baseAttr = m_attributeCount;
+  Assert(baseAttr + attrCount <= kMaxShaderAttributes);
+
+  // Append every attribute of this buffer to the shared format table,
+  // accumulating the per-element stride as we go.
+  u32 stride = 0;
+  for (u32 i = 0; i < attrCount; ++i) {
+    Attribute &attr = m_attributes[baseAttr + i];
+    GfxType type = types[i];
+
+    attr.attr = attrs[i];
+    attr.type = type;
+    attr.bufferIdx = (u16)idx;
+    attr.offset = stride;
+
+    u32 size = 0;
+    u08 typeIdx = type - 1;
+    if (typeIdx <= kGfxType_COUNT - 2)
+      size = kGfxTypeSizes[typeIdx];
+    stride += size;
+  }
+
+  m_attributeCount = baseAttr + attrCount;
+  m_bufferInfo[idx].stride = (u16)stride;
+  m_bufferInfo[idx].perInstance = (u16)perInstance;
+
+  // The buffer holds one element per vertex, or per instance when flagged.
+  u32 count = perInstance ? m_maxInstances : m_maxVertices;
+
+  char buffer[64] = {0};
+  snprintf(buffer, sizeof(buffer), "%s_%u", m_name, idx);
+
+  m_vtxBuffers[idx].Initialize(
+    buffer,
+    kGfxBufferType_Vertex,
+    strategy,
+    count * stride,
+    data);
 }
 
 void VertexData::AddIndexBuffer(
   u32 idx,
   GfxType type,
   GpuBuffer::Strategy strategy,
-  u32 count,
+  u32 dataLength,
   const void *idxBuffer
 ) {
-  using PFN = void (*)(
-    VertexData *, u32, GfxType, GpuBuffer::Strategy, u32, const void *);
-  static const Rva s_VertexData_AddIndexBuffer = 0x000FED50;
-  ((PFN)s_VertexData_AddIndexBuffer())(
-    this, idx, type, strategy, count, idxBuffer);
+  Assert(idx < kMaxIndexBuffers);
+
+  m_idxBuffers[idx].type = type;
+  m_idxBuffers[idx].unk_3 = 0;
+  m_idxBuffers[idx].capacity = dataLength;
+
+  u32 elementSize = 0;
+  if (type < kGfxType_COUNT)
+    elementSize = kGfxTypeSizes[type];
+
+  m_idxBuffers[idx].buffer.Initialize(
+    m_name,
+    kGfxBufferType_Index,
+    strategy,
+    elementSize * dataLength,
+    idxBuffer);
 }
 
 void VertexData::EndDefinition() {
-  using PFN = void (*)(VertexData *);
-  static const Rva s_VertexData_EndDefinition = 0x000FEEC0;
-  ((PFN)s_VertexData_EndDefinition())(this);
+  m_complete = true;
+  m_active = this;
 }
 
 // ----------------------------------------------------------------------------

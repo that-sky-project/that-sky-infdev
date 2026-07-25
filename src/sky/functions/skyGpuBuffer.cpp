@@ -5,7 +5,7 @@
 void GpuBuffer::Initialize(
   cstring name,
   GfxBufferType type,
-  GfxBind usage,
+  GpuBuffer::Strategy usage,
   u32 size,
   const void *data
 ) {
@@ -124,6 +124,100 @@ void GpuBuffer::Initialize(
   }
 }
 
+void GpuBuffer::Terminate() {
+  // Unmap all buffers.
+  if (m_isMapped)
+    UnmapBuffer();
+
+  // Release all buffers.
+  if (m_readableBuffer != -1 )
+    GetRenderer()->ReleaseBuffer(m_readableBuffer);
+  if (m_writableBuffer != -1 && !m_isCpuCoherent)
+    GetRenderer()->ReleaseBuffer(m_writableBuffer);
+
+  // Reset cached states.
+  m_bufferSize = 0;
+  m_usage = kGfxBind_Undefined;
+  m_type = kGfxBufferType_Undefined;
+  m_readableBuffer = m_writableBuffer = -1;
+  m_writeCount = m_writeIndex = m_readCount = m_readIndex = 0;
+  m_isMapped = m_isSharedWritten = m_isCpuCoherent = false;
+}
+
 void *GpuBuffer::MapBuffer() {
-  
+  // Padding is only meaningful when an alignment was requested; otherwise the
+  // raw size is the per-copy stride.
+  u32 realSize = m_alignment ? GetPaddedSize() : m_bufferSize;
+
+  m_isMapped = true;
+
+  // Download buffers cycle through the readable (device-visible) copies so the
+  // CPU can read the most recently produced frame; every other usage cycles
+  // through the writable (staging) copies to be filled by the CPU.
+  if (m_usage == kGfxBind_DownloadTriple) {
+    m_readIndex = (m_readIndex + 1) % m_readCount;
+
+    void *mapped = GetRenderer()->MapBuffer(m_readableBuffer);
+    if (!mapped)
+      return nullptr;
+    return (u08 *)mapped + m_readIndex * realSize;
+  }
+
+  m_writeIndex = (m_writeIndex + 1) % m_writeCount;
+
+  void *mapped = GetRenderer()->MapBuffer(m_writableBuffer);
+  if (!mapped)
+    return nullptr;
+  return (u08 *)mapped + m_writeIndex * realSize;
+}
+
+void GpuBuffer::UnmapBuffer() {
+  GfxBind usage = m_usage;
+
+  m_isMapped = false;
+  m_isSharedWritten = true;
+
+  // Download buffers are read straight out of the readable copy; there is
+  // nothing to flush back to the device.
+  if (usage == kGfxBind_DownloadTriple) {
+    GetRenderer()->UnmapBuffer(m_readableBuffer);
+    return;
+  }
+
+  // Advance the readable copy that will receive the write we just finished.
+  m_readIndex = (m_readIndex + 1) % m_readCount;
+  GetRenderer()->UnmapBuffer(m_writableBuffer);
+
+  // Coherent memory is already visible to the device; non-coherent memory needs
+  // an explicit copy from the just-written staging slot to the readable slot.
+  if (!m_isCpuCoherent) {
+    u32 realSize = m_alignment ? GetPaddedSize() : m_bufferSize;
+    GetRenderer()->CopyBuffer(
+      m_readableBuffer,
+      realSize * m_readIndex,
+      m_writableBuffer,
+      realSize * m_writeIndex,
+      realSize);
+  }
+
+  // The staging buffer is transient for any real upload usage: drop the copy
+  // and release its handle once the contents have been flushed.
+  if (m_usage) {
+    if (!m_isCpuCoherent)
+      GetRenderer()->ReleaseBuffer(m_writableBuffer);
+    m_writableBuffer = -1;
+    m_writeCount = 0;
+  }
+}
+
+u32 GpuBuffer::GetTotalMemSize() {
+  u32 readableSize = 0
+    , writableSize = 0;
+
+  if (m_readableBuffer >= 1)
+    readableSize = GetRenderer()->GetPaddedBufferSize(m_readableBuffer);
+  if (m_writableBuffer >= 1 && m_writableBuffer != m_readableBuffer)
+    writableSize = GetRenderer()->GetPaddedBufferSize(m_writableBuffer);
+
+  return readableSize + writableSize;
 }

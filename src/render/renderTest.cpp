@@ -127,9 +127,67 @@ void RenderTest::installHook() {
 void RenderTest::initialize(
   Game *game
 ) {
+  static const TerrainDepthVertex sVerticesT[3] = {{0, 1, 0}, {0, 1, 100}, {100, 1, 100}};
+  static const GrassShVertex sVerticesG[3] = {{0, 1, 0}, {0, 1, 100}, {100, 1, 100}};
+  static const u16 sIndicesT[6] = {0, 1, 2, 0, 2, 1};
+  static const u16 sIndicesG[6] = {0, 1, 2, 0, 2, 1};
 
+  depthD.BeginDefinition("TerrainDepth", 3);
+  depthD.AddVertexBuffer(
+    0,
+    TerrainDepthVertex::kTypes,
+    TerrainDepthVertex::kAttrs,
+    TerrainDepthVertex::kNumAttrs,
+    kGfxBind_UploadSingle,
+    0,
+    sVerticesT);
+  depthD.AddIndexBuffer(
+    0, kGfxType_SHORT, kGfxBind_UploadSingle, 0x6, sIndicesT);
+  depthD.EndDefinition();
+
+  matD.BeginDefinition("TerrainGeo", 3);
+  matD.AddVertexBuffer(
+    0,
+    GrassShVertex::kTypes,
+    GrassShVertex::kAttrs,
+    GrassShVertex::kNumAttrs,
+    kGfxBind_UploadSingle,
+    0,
+    sVerticesG);
+  matD.AddIndexBuffer(
+    0, kGfxType_SHORT, kGfxBind_UploadSingle, 0x6, sIndicesG);
+  matD.EndDefinition();
+
+  materialDefBarn = game->resolveMember<MaterialDefBarn *>("materialDefBarn");
+  resourceManager = game->resolveMember<ResourceManager *>("resources");
+  heap = game->resolveMember<Heap *>("levelHeap");
+  scene = game->resolveMember<Scene *>("scene");
+  HTTellText("§c[ThatSkyInfdev] game.materialDefBarn = %p", materialDefBarn);
+  HTTellText("§c[ThatSkyInfdev] game.resourceManager = %p", resourceManager);
+  HTTellText("§c[ThatSkyInfdev] game.levelHeap = %p", heap);
+  HTTellText("§c[ThatSkyInfdev] game.scene = %p", scene);
+
+  RenderList *rld = scene->GetRenderListByName("TerrainDepth")
+    , *rlm = scene->GetRenderListByName("TerrainMats");
+  HTTellText("§c[ThatSkyInfdev] scene.renderList.TerrainDepth = %p", rld);
+  HTTellText("§c[ThatSkyInfdev] scene.renderList.TerrainMats = %p", rlm);
+
+  depthR.Initialize(&depthD, resourceManager, "TerrainDepth", rld, 0, nullptr);
+  depthR.AllocVertexSparse(0, nullptr, 0x400);
+  MaterialDefBarn::SetMaterialShaderUniforms(
+    depthR.GetPipelineInstance(),
+    materialDefBarn->GetDef(kMaterial_None),
+    resourceManager);
+
+  matR.Initialize(&matD, resourceManager, "GrassSh", rlm, 0, nullptr);
+  matR.AllocVertexSparse(0, nullptr, 0x400);
+  MaterialDefBarn::SetMaterialShaderUniforms(
+    matR.GetPipelineInstance(),
+    materialDefBarn->GetDef(kMaterial_Grass),
+    resourceManager);
 }
 
 void RenderTest::update() {
-
+  depthR.Queue();
+  matR.Queue();
 }
