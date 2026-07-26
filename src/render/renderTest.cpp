@@ -124,23 +124,23 @@ void RenderTest::installHook() {
   HTModLoader::createHookAndEnable(nullptr, &sfn_NetModule_Update);
 }
 
+static const TerrainDepthVertex sVerticesT[3] = {{0, 1, 0}, {0, 1, 100}, {100, 1, 100}};
+static const GrassShVertex sVerticesG[3] = {{0, 1, 0}, {0, 1, 100}, {100, 1, 100}};
+static const u16 sIndicesT[6] = {0, 1, 2, 0, 2, 1};
+static const u16 sIndicesG[6] = {0, 1, 2, 0, 2, 1};
+
 void RenderTest::initialize(
   Game *game
 ) {
-  static const TerrainDepthVertex sVerticesT[3] = {{0, 1, 0}, {0, 1, 100}, {100, 1, 100}};
-  static const GrassShVertex sVerticesG[3] = {{0, 1, 0}, {0, 1, 100}, {100, 1, 100}};
-  static const u16 sIndicesT[6] = {0, 1, 2, 0, 2, 1};
-  static const u16 sIndicesG[6] = {0, 1, 2, 0, 2, 1};
-
   depthD.BeginDefinition("TerrainDepth", 3);
   depthD.AddVertexBuffer(
     0,
     TerrainDepthVertex::kTypes,
     TerrainDepthVertex::kAttrs,
     TerrainDepthVertex::kNumAttrs,
-    kGfxBind_UploadSingle,
+    kGfxBind_UploadTriple,
     0,
-    sVerticesT);
+    nullptr);
   depthD.AddIndexBuffer(
     0, kGfxType_SHORT, kGfxBind_UploadSingle, 0x6, sIndicesT);
   depthD.EndDefinition();
@@ -151,12 +151,21 @@ void RenderTest::initialize(
     GrassShVertex::kTypes,
     GrassShVertex::kAttrs,
     GrassShVertex::kNumAttrs,
-    kGfxBind_UploadSingle,
+    kGfxBind_UploadTriple,
     0,
-    sVerticesG);
+    nullptr);
   matD.AddIndexBuffer(
     0, kGfxType_SHORT, kGfxBind_UploadSingle, 0x6, sIndicesG);
   matD.EndDefinition();
+
+  depthVtxBuffer = depthD.GetVertexBuffer(0).MapBuffer();
+  matVtxBuffer = matD.GetVertexBuffer(0).MapBuffer();
+
+  memcpy(depthVtxBuffer, sVerticesT, sizeof(sVerticesT));
+  memcpy(matVtxBuffer, sVerticesG, sizeof(sVerticesG));
+
+  depthD.GetVertexBuffer(0).UnmapBuffer();
+  matD.GetVertexBuffer(0).UnmapBuffer();
 
   materialDefBarn = game->resolveMember<MaterialDefBarn *>("materialDefBarn");
   resourceManager = game->resolveMember<ResourceManager *>("resources");
@@ -188,6 +197,30 @@ void RenderTest::initialize(
 }
 
 void RenderTest::update() {
+  static f32 s_count = 0;
+
+  f32 x = sinf(s_count)
+    , z = cosf(s_count);
+  s_count += 0.01f;
+
+  GpuBuffer &depthBuffer = depthD.GetVertexBuffer(0);
+  TerrainDepthVertex *depthData = (TerrainDepthVertex *)depthBuffer.MapBuffer();
+  if (depthData) {
+    memcpy(depthData, sVerticesT, sizeof(sVerticesT));
+    depthData[0].a_position[0] = x;
+    depthData[0].a_position[2] = z;
+    depthBuffer.UnmapBuffer();
+  }
+
+  GpuBuffer &matBuffer = matD.GetVertexBuffer(0);
+  TerrainDepthVertex *matData = (TerrainDepthVertex *)matBuffer.MapBuffer();
+  if (matData) {
+    memcpy(matData, sVerticesG, sizeof(sVerticesG));
+    matData[0].a_position[0] = x;
+    matData[0].a_position[2] = z;
+    matBuffer.UnmapBuffer();
+  }
+
   depthR.Queue();
   matR.Queue();
 }

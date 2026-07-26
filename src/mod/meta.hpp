@@ -53,13 +53,21 @@ public:
     MetaMemberVariable *chain);
   
   void set(
-    const MetaSystem *p,
+    const MetaSystemExample *p,
     u32 count);
+
+  inline LPCMetaClass get(u32 id) const { return id > m_data->m_maxClasses ? GetMetaClass() : m_classes[id]; }
+  inline LPCMetaClass get(cstring name) const {
+    if (!name) return GetMetaClass();
+    const auto &classes = m_data->m_metaClasses;
+    const auto &it = classes.find(name);
+    return it == classes.end() ? GetMetaClass() : it->second;
+  }
 
 private:
   void m_recursiveSort(
     LPMetaClass mc,
-    int *pTopologyCounter);
+    i32 *pTopologyCounter);
 
 public:
   u32 m_metaClassId;

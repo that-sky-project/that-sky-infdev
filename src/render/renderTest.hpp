@@ -33,6 +33,9 @@ private:
   VertexData depthD;
   VertexData matD;
 
+  void *depthVtxBuffer;
+  void *matVtxBuffer;
+
   //std::vector<TerrainRenderChunk *> chunks = {};
 };
 

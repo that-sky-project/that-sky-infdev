@@ -33,7 +33,7 @@ ProxyMetaSystem *ProxyMetaSystem::create(
 }
 
 void ProxyMetaSystem::set(
-  const MetaSystem *p,
+  const MetaSystemExample *p,
   u32 count
 ) {
   *m_data = *p->m_data;

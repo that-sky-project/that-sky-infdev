@@ -4,7 +4,6 @@
 #include <Base/Meta.hpp>
 
 using ShaderProgram = void *;
-using RenderList = void *;
 
 class ResourceManager { };
 META_DECLARE_CLASS(ResourceManager)

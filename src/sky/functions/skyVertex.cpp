@@ -46,8 +46,9 @@ void VertexData::BeginDefinition(
   cstring name,
   u32 maxVertices
 ) {
-  AssertMsg(m_complete, "VertexData must be Release()'d before it can be redefined");
+  AssertMsg(m_complete == false, "VertexData must be Release()'d before it can be redefined");
   m_maxVertices = maxVertices;
+  m_name = GetRenderer()->GetImmutableString(name);
 }
 
 void VertexData::AddVertexBuffer(

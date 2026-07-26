@@ -64,7 +64,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <LanguageStandard_C>stdc11</LanguageStandard_C>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\libraries\that-sky-engine\libraries\lua;$(ProjectDir)..\..\..\libraries\that-sky-engine\src\Code;$(ProjectDir)..\..\..\libraries\htmodloader\includes\htmodloader;$(ProjectDir)..\..\..\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\libraries\that-sky-engine\libraries\lua;$(ProjectDir)..\..\..\libraries\that-sky-engine\src\Code;$(ProjectDir)..\..\..\libraries\that-sky-engine\libraries\portable-snippets;$(ProjectDir)..\..\..\libraries\htmodloader\includes\htmodloader;$(ProjectDir)..\..\..\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
@@ -86,7 +86,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <LanguageStandard_C>stdc11</LanguageStandard_C>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\libraries\that-sky-engine\libraries\lua;$(ProjectDir)..\..\..\libraries\that-sky-engine\src\Code;$(ProjectDir)..\..\..\libraries\htmodloader\includes\htmodloader;$(ProjectDir)..\..\..\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\libraries\that-sky-engine\libraries\lua;$(ProjectDir)..\..\..\libraries\that-sky-engine\src\Code;$(ProjectDir)..\..\..\libraries\that-sky-engine\libraries\portable-snippets;$(ProjectDir)..\..\..\libraries\htmodloader\includes\htmodloader;$(ProjectDir)..\..\..\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
@@ -110,8 +110,10 @@
     <ClCompile Include="..\..\..\src\sky\functions\skyGame.cpp" />
     <ClCompile Include="..\..\..\src\sky\functions\skyGpuBuffer.cpp" />
     <ClCompile Include="..\..\..\src\sky\functions\skyMaterialDefBarn.cpp" />
+    <ClCompile Include="..\..\..\src\sky\functions\skyMetaPlaceholders.cpp" />
     <ClCompile Include="..\..\..\src\sky\functions\skyPrivate.cpp" />
     <ClCompile Include="..\..\..\src\sky\functions\skyRendererUtils.cpp" />
+    <ClCompile Include="..\..\..\src\sky\functions\skyRenderList.cpp" />
     <ClCompile Include="..\..\..\src\sky\functions\skyScene.cpp" />
     <ClCompile Include="..\..\..\src\sky\functions\skyVertex.cpp" />
     <ClCompile Include="..\..\..\src\utils\htmodloader.cpp" />

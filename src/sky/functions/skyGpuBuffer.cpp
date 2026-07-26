@@ -172,14 +172,12 @@ void *GpuBuffer::MapBuffer() {
 }
 
 void GpuBuffer::UnmapBuffer() {
-  GfxBind usage = m_usage;
-
   m_isMapped = false;
   m_isSharedWritten = true;
 
   // Download buffers are read straight out of the readable copy; there is
   // nothing to flush back to the device.
-  if (usage == kGfxBind_DownloadTriple) {
+  if (m_usage == kGfxBind_DownloadTriple) {
     GetRenderer()->UnmapBuffer(m_readableBuffer);
     return;
   }
@@ -202,7 +200,7 @@ void GpuBuffer::UnmapBuffer() {
 
   // The staging buffer is transient for any real upload usage: drop the copy
   // and release its handle once the contents have been flushed.
-  if (m_usage) {
+  if (m_usage == kGfxBind_UploadSingle) {
     if (!m_isCpuCoherent)
       GetRenderer()->ReleaseBuffer(m_writableBuffer);
     m_writableBuffer = -1;

@@ -120,7 +120,7 @@ static void hook_Game_Alloc(
   // WARN: This is an unsafe and highly incompatible implementation, intended for
   // use in this example only. Do not use it in actual development.
   gProxyMetaSystem->set(
-    reinterpret_cast<const MetaSystem *>(gMetaSystem),
+    reinterpret_cast<const MetaSystemExample *>(gMetaSystem),
     classCount);
 
   HTTellText(
@@ -132,7 +132,7 @@ static void hook_Game_Alloc(
     gProxyMetaSystem->m_data->m_count,
     gProxyMetaSystem->m_data->m_metaClasses.size());
 
-  const MetaSystem *old = reinterpret_cast<const MetaSystem *>(*ppGameMetaSystem);
+  const MetaSystemExample *old = reinterpret_cast<const MetaSystemExample *>(*ppGameMetaSystem);
 
   HTTellText("§a[ThatSkyInfdev] Destroying previous.....");
   // Call destructor of MetaStrMap.
@@ -147,7 +147,15 @@ static void hook_Game_Alloc(
   gProxyMetaSystem->submitChain(MetaObject<MetaMemberFunction>::m_List());
   gProxyMetaSystem->submitChain(MetaObject<MetaMemberVariable>::m_List());
 
-  MetaSystem::SetMetaSystem(reinterpret_cast<MetaSystem *>(gProxyMetaSystem));
+  SetMetaSystem(
+    gProxyMetaSystem,
+    [](const void *user, i32 id) -> LPCMetaClass {
+      return static_cast<const ProxyMetaSystem *>(user)->get(id);
+    },
+    [](const void *user, cstring name, bool) -> LPCMetaClass {
+      return static_cast<const ProxyMetaSystem *>(user)->get(name);
+    }
+  );
 
   ((PFN_Game_Alloc)sfn_Game_Alloc.origin)(self);
 }
@@ -158,10 +166,7 @@ static LPCMetaClass hook_GetMetaClassById(
   if (!gProxyMetaSystem)
     return ((PFN_GetMetaClassById)sfn_GetMetaClassById.origin)(id);
 
-  if (id > gProxyMetaSystem->m_data->m_maxClasses)
-    return nullptr;
-
-  return gProxyMetaSystem->m_classes[id];
+  return GetMetaClassById(id);
 }
 
 static LPCMetaClass hook_GetMetaClassByName(
@@ -171,16 +176,7 @@ static LPCMetaClass hook_GetMetaClassByName(
   if (!gProxyMetaSystem)
     return ((PFN_GetMetaClassByName)sfn_GetMetaClassByName.origin)(name, isConstString);
 
-  if (!name)
-    return nullptr;
-
-  const auto &classes = gProxyMetaSystem->m_data->m_metaClasses;
-  const auto &it = classes.find(name);
-
-  if (it == classes.end())
-    return nullptr;
-
-  return it->second;
+  return GetMetaClassByName(name);
 }
 
 void MetaSystemOverride::initialize() {

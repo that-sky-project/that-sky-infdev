@@ -2,6 +2,7 @@
 #define __SKY_SKYRENDERERUTILS_HPP__
 
 #include <Utils/Types.h>
+#include "sky/skyTypePlaceholders.hpp"
 #include "sky/skyGfx.hpp"
 
 using RendererConfiguration = void *;
@@ -225,6 +226,15 @@ private:
 
 class VertexRender;
 
+struct RenderListSettings {
+  ~RenderListSettings() = default;
+  RenderListSettings() = default;
+
+  u32 capacity = 0;
+  u32 unk_1 = 0;
+  char name[28] = {0};
+};
+
 struct RenderFormat {
   char unk[8];
 };
@@ -241,6 +251,28 @@ public:
   RenderList(const RenderList &) = delete;
   RenderList &operator=(const RenderList &) = delete;
 
+  inline bool GetContext(
+    const RenderFormat **ppFormat,
+    const RenderPipelineState **ppState
+  ) {
+    if (m_foundContext) {
+      if (ppFormat)
+        *ppFormat = &m_renderFormat;
+      if (ppState)
+        *ppState = &m_renderPipelineState;
+    }
+    return m_foundContext;
+  }
+
+  void Clear();
+
+  void Initialize(Heap *heap, RenderListSettings settings);
+  void Terminate(Heap *heap);
+
+  void AddRender(VertexRender *render);
+  void RemoveRender(VertexRender *render);
+  void EnqueueRender(VertexRender *render);
+
 private:
   VertexRender **m_vertexRender = nullptr;
   u32 m_queuedCount = 0;
@@ -251,6 +283,16 @@ private:
   RenderPipelineState m_renderPipelineState;
   RenderFormat m_renderFormat;
   bool m_foundContext = false;
+};
+
+// ----------------------------------------------------------------------------
+// [SECTION] RendererUtils/PipelineInstance
+// ----------------------------------------------------------------------------
+
+class PipelineInstance {
+private:
+  u64 _align;
+  u08 _gap[272 - 8];
 };
 
 #endif

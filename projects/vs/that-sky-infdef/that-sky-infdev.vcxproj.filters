@@ -75,5 +75,11 @@
     <ClCompile Include="..\..\..\src\sky\functions\skyRendererUtils.cpp">
       <Filter>src\sky\functions</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\sky\functions\skyRenderList.cpp">
+      <Filter>src\sky\functions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\sky\functions\skyMetaPlaceholders.cpp">
+      <Filter>src\sky\functions</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

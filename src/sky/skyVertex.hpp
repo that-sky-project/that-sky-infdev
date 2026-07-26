@@ -10,12 +10,6 @@
 #include "sky/skyRendererUtils.hpp"
 #include "sky/skyTypePlaceholders.hpp"
 
-class PipelineInstance {
-private:
-  u64 _align;
-  u08 _gap[272 - 8];
-};
-
 class VertexData {
 public:
   static constexpr u32 kMaxVertexBuffers = 8;

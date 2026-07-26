@@ -8,7 +8,7 @@ private:
 
   };
 
-  static Vars ms_vars = {};
+  static Vars ms_vars;
 
 public:
 
