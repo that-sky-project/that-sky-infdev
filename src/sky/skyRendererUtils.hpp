@@ -2,6 +2,7 @@
 #define __SKY_SKYRENDERERUTILS_HPP__
 
 #include <Utils/Types.h>
+#include <Memory/Heap.hpp>
 #include "sky/skyTypePlaceholders.hpp"
 #include "sky/skyGfx.hpp"
 

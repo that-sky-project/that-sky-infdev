@@ -2,6 +2,7 @@
 #include <includes/htmodloader.h>
 #include <Utils/Types.h>
 #include <Utils/StlAllocator.hpp>
+#include <Memory/Heap.hpp>
 #include "utils/htmodloader.hpp"
 #include "render/renderTest.hpp"
 #include "sky/skyGame.hpp"

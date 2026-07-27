@@ -60,11 +60,11 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;USE_DL_PREFIX;MSPACES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <LanguageStandard_C>stdc11</LanguageStandard_C>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\libraries\that-sky-engine\libraries\lua;$(ProjectDir)..\..\..\libraries\that-sky-engine\src\Code;$(ProjectDir)..\..\..\libraries\that-sky-engine\libraries\portable-snippets;$(ProjectDir)..\..\..\libraries\htmodloader\includes\htmodloader;$(ProjectDir)..\..\..\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\libraries\that-sky-engine\libraries\dlmalloc-2.8.6;$(ProjectDir)..\..\..\libraries\that-sky-engine\libraries\lua;$(ProjectDir)..\..\..\libraries\that-sky-engine\src\Code;$(ProjectDir)..\..\..\libraries\that-sky-engine\libraries\portable-snippets;$(ProjectDir)..\..\..\libraries\htmodloader\includes\htmodloader;$(ProjectDir)..\..\..\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
@@ -72,8 +72,8 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(ProjectDir)../../../libraries/that-sky-engine/project/vs/lua/dist;$(ProjectDir)../../../libraries/that-sky-engine/project/vs/that-sky-engine/dist;$(ProjectDir)../../../libraries/htmodloader/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>that-sky-engine.lib;htmodloader.lib;lua.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)../../../libraries/that-sky-engine/project/vs/dlmalloc/dist;$(ProjectDir)../../../libraries/that-sky-engine/project/vs/lua/dist;$(ProjectDir)../../../libraries/that-sky-engine/project/vs/that-sky-engine/dist;$(ProjectDir)../../../libraries/htmodloader/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>that-sky-engine.lib;htmodloader.lib;lua.lib;dlmalloc.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -82,11 +82,11 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;USE_DL_PREFIX;MSPACES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <LanguageStandard_C>stdc11</LanguageStandard_C>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\libraries\that-sky-engine\libraries\lua;$(ProjectDir)..\..\..\libraries\that-sky-engine\src\Code;$(ProjectDir)..\..\..\libraries\that-sky-engine\libraries\portable-snippets;$(ProjectDir)..\..\..\libraries\htmodloader\includes\htmodloader;$(ProjectDir)..\..\..\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\libraries\that-sky-engine\libraries\dlmalloc-2.8.6;$(ProjectDir)..\..\..\libraries\that-sky-engine\libraries\lua;$(ProjectDir)..\..\..\libraries\that-sky-engine\src\Code;$(ProjectDir)..\..\..\libraries\that-sky-engine\libraries\portable-snippets;$(ProjectDir)..\..\..\libraries\htmodloader\includes\htmodloader;$(ProjectDir)..\..\..\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
@@ -94,8 +94,8 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(ProjectDir)../../../libraries/that-sky-engine/project/vs/lua/dist;$(ProjectDir)../../../libraries/that-sky-engine/project/vs/that-sky-engine/dist;$(ProjectDir)../../../libraries/htmodloader/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>that-sky-engine.lib;htmodloader.lib;lua.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)../../../libraries/that-sky-engine/project/vs/dlmalloc/dist;$(ProjectDir)../../../libraries/that-sky-engine/project/vs/lua/dist;$(ProjectDir)../../../libraries/that-sky-engine/project/vs/that-sky-engine/dist;$(ProjectDir)../../../libraries/htmodloader/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>that-sky-engine.lib;htmodloader.lib;lua.lib;dlmalloc.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

@@ -8,9 +8,6 @@ using ShaderProgram = void *;
 class ResourceManager { };
 META_DECLARE_CLASS(ResourceManager)
 
-class Heap { };
-META_DECLARE_CLASS(Heap)
-
 class AvatarBarn { };
 META_DECLARE_CLASS(AvatarBarn)
 
