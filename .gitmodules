@@ -4,3 +4,6 @@
 [submodule "libraries/lrucache11"]
 	path = libraries/lrucache11
 	url = https://github.com/mohaps/lrucache11
+[submodule "libraries/that-sky-modbase"]
+	path = libraries/that-sky-modbase
+	url = https://github.com/that-sky-project/that-sky-modbase
