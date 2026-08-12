@@ -1,6 +1,7 @@
 #include <Windows.h>
 #include <includes/htmod.h>
 #include "mod/meta.hpp"
+#include "mod/modbasecall.hpp"
 #include "render/renderTest.hpp"
 
 HMODULE hModuleDll = NULL;
@@ -10,6 +11,7 @@ __declspec(dllexport) HTStatus HTMLAPI HTModOnInit(
 ) {
   MetaSystemOverride::initialize();
   RenderTest::installHook();
+  Modbase::RegisterAssets();
   return HT_SUCCESS;
 }
 

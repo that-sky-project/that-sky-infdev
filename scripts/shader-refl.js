@@ -41,9 +41,8 @@ const SHADER_TYPE = { vert: 0, frag: 3, pixel: 3, comp: 4, compute: 4 };
 // JSON value type -> binary type code (reuse GfxType: Float=1,Float2=2,Float3=3,Float4=4, mat4=35)
 const TYPE_CODE = {
   float: 1, vec2: 2, vec3: 3, vec4: 4,
-  int: 1, ivec2: 2, ivec3: 3, ivec4: 4,
-  uint: 1, uvec2: 2, uvec3: 3, uvec4: 4,
-  bool: 1, bvec2: 2, bvec3: 3, bvec4: 4,
+  int: 5, ivec2: 6, ivec3: 7, ivec4: 8,
+  uint: 9, uvec2: 10, uvec3: 11, uvec4: 12,
   mat2: 33, mat3: 34, mat4: 35,
 };
 // Sampler type code (texture record at +30; sample: sampler2D=1)
@@ -147,7 +146,8 @@ function encodeStage(refl) {
   w.u8(outputs.length);    // cnt4 outputs
   w.u8(textures.length);   // cnt5 textures
   w.u8(ubos.length);       // cnt6 blockBindings (ubos)
-  w.zeros(5);              // +7..+11 (cannot be derived from JSON)
+  w.u8(shaderType == SHADER_TYPE.vert ? 8 : 0); // cnt7 maxBindings
+  w.zeros(4);              // +8..+11 (cannot be derived from JSON)
 
   // --- Array 0 entryPoint (32B x 1) ---
   w.name(entryName, 32);
@@ -195,16 +195,34 @@ function encodeStage(refl) {
 
   // --- Array 5 blockBindings/ubos (36B): name30 + binding + 0 + block_size(u16) + 0 + 0 ---
   for (const u of ubos) {
+    var flags = 0
+      , blockSize = (u.block_size | 0) & 0xfffffff;
+
+    if (u.name === "PerFrameUniforms")
+      flags |= 0x40000000;
+    else if (u.name === "PerPassUniforms")
+      flags |= 0x80000000;
+
     w.name(u.name, 30);
-    w.u8((u.binding | 0) & 0xff);    // +30 (inferred)
-    w.u8(0);                         // +31 (set/flag, position unknown)
-    w.u16((u.block_size | 0) & 0xffff); // +32
-    w.u8(0);                         // +34
-    w.u8(0);                         // +35 (flag, position unknown)
+    w.u8(typeKeys.indexOf(u.type));  // +30 (type index)
+    w.u8((u.binding | 0) & 0xff);    // +31 (binding index)
+    w.u32(blockSize | flags);        // +32 (block size & flags)
+
+    // Actually only bit [31:28] of the above DWORD is considered as flags. Lower bits are
+    // considered as size of the uniform buffer.
+    // 0x10000000: isStorageBuffer, marked as VK_DESCRIPTOR_TYPE_STORAGE_BUFFER if true,
+    //             or VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER if false.
+    // 0x20000000: isReadonly, marked as read-only if true.
+    // 0x40000000: isGlobalUniformBuffer, look up the buffer in global shader uniform buffer
+    //             list if true.
+    // 0x80000000: isExternalBuffer, marked as external (manually) bound if true.
   }
 
-  // --- tail (8B, cannot be derived from JSON, zeroed) ---
-  w.zeros(8);
+  // The remapping table from vertex buffer slot index (used in `vkCmdBindVertexBuffers`)
+  // to Vulkan binding number (`VkVertexInputAttributeDescription.binding`).
+  // Usually set to 00 01 03 04 05 06 07 08
+  w.u8(0); w.u8(1); w.u8(3); w.u8(4);
+  w.u8(5); w.u8(6); w.u8(7); w.u8(8);
 
   return { buffer: w.toBuffer(), shaderType, mode, textures, ubos, types };
 }

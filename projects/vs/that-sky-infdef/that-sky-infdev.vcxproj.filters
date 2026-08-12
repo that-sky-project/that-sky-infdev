@@ -81,5 +81,8 @@
     <ClCompile Include="..\..\..\src\sky\functions\skyMetaPlaceholders.cpp">
       <Filter>src\sky\functions</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\mod\modbasecall.cpp">
+      <Filter>src\mod</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

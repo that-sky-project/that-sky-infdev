@@ -102,7 +102,7 @@ static void hook_NetModule_Update(
     // Allocate the RenderTest object in a single memory page to set memory
     // R/W breakpoints.
     //void *buffer = VirtualAlloc((void *)0x0000001145140000ull, 0x1000, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-    void *buffer = VirtualAlloc(nullptr, 0x1000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+    void *buffer = VirtualAlloc(nullptr, 0x2000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
     Assert(buffer);
     new (buffer) RenderTest();
     gRenderTest = (RenderTest *)buffer;
@@ -133,95 +133,79 @@ static const u16 sIndicesG[6] = {0, 1, 2, 0, 2, 1};
 void RenderTest::initialize(
   Game *game
 ) {
-  depthD.BeginDefinition("TerrainDepth", 3);
-  depthD.AddVertexBuffer(
-    0,
-    TerrainDepthVertex::kTypes,
-    TerrainDepthVertex::kAttrs,
-    TerrainDepthVertex::kNumAttrs,
-    kGfxBind_UploadTriple,
-    0,
-    nullptr);
-  depthD.AddIndexBuffer(
-    0, kGfxType_SHORT, kGfxBind_UploadSingle, 0x6, sIndicesT);
-  depthD.EndDefinition();
-
-  matD.BeginDefinition("TerrainGeo", 3);
-  matD.AddVertexBuffer(
-    0,
-    GrassShVertex::kTypes,
-    GrassShVertex::kAttrs,
-    GrassShVertex::kNumAttrs,
-    kGfxBind_UploadTriple,
-    0,
-    nullptr);
-  matD.AddIndexBuffer(
-    0, kGfxType_SHORT, kGfxBind_UploadSingle, 0x6, sIndicesG);
-  matD.EndDefinition();
-
-  depthVtxBuffer = depthD.GetVertexBuffer(0).MapBuffer();
-  matVtxBuffer = matD.GetVertexBuffer(0).MapBuffer();
-
-  memcpy(depthVtxBuffer, sVerticesT, sizeof(sVerticesT));
-  memcpy(matVtxBuffer, sVerticesG, sizeof(sVerticesG));
-
-  depthD.GetVertexBuffer(0).UnmapBuffer();
-  matD.GetVertexBuffer(0).UnmapBuffer();
-
   materialDefBarn = game->resolveMember<MaterialDefBarn *>("materialDefBarn");
   resourceManager = game->resolveMember<ResourceManager *>("resources");
   heap = game->resolveMember<Heap *>("levelHeap");
   scene = game->resolveMember<Scene *>("scene");
+
   HTTellText("§c[ThatSkyInfdev] game.materialDefBarn = %p", materialDefBarn);
   HTTellText("§c[ThatSkyInfdev] game.resourceManager = %p", resourceManager);
   HTTellText("§c[ThatSkyInfdev] game.levelHeap = %p", heap);
   HTTellText("§c[ThatSkyInfdev] game.scene = %p", scene);
 
-  RenderList *rld = scene->GetRenderListByName("TerrainDepth")
-    , *rlm = scene->GetRenderListByName("TerrainMats");
-  HTTellText("§c[ThatSkyInfdev] scene.renderList.TerrainDepth = %p", rld);
-  HTTellText("§c[ThatSkyInfdev] scene.renderList.TerrainMats = %p", rlm);
-
-  depthR.Initialize(&depthD, resourceManager, "TerrainDepth", rld, 0, nullptr);
-  depthR.AllocVertexSparse(0, nullptr, 0x400);
-  MaterialDefBarn::SetMaterialShaderUniforms(
-    depthR.GetPipelineInstance(),
-    materialDefBarn->GetDef(kMaterial_None),
-    resourceManager);
-
-  matR.Initialize(&matD, resourceManager, "GrassSh", rlm, 0, nullptr);
-  matR.AllocVertexSparse(0, nullptr, 0x400);
-  MaterialDefBarn::SetMaterialShaderUniforms(
-    matR.GetPipelineInstance(),
-    materialDefBarn->GetDef(kMaterial_Grass),
-    resourceManager);
+  m_initializeTerrain();
+  m_initializeEndPortal();
 }
 
 void RenderTest::update() {
-  static f32 s_count = 0;
+  m_updateTerrain();
+  m_updateEndPortal();
+}
 
-  f32 x = sinf(s_count)
-    , z = cosf(s_count);
-  s_count += 0.01f;
+void RenderTest::m_initializeTerrain() {
+  ;
+}
 
-  GpuBuffer &depthBuffer = depthD.GetVertexBuffer(0);
-  TerrainDepthVertex *depthData = (TerrainDepthVertex *)depthBuffer.MapBuffer();
-  if (depthData) {
-    memcpy(depthData, sVerticesT, sizeof(sVerticesT));
-    depthData[0].a_position[0] = x;
-    depthData[0].a_position[2] = z;
-    depthBuffer.UnmapBuffer();
+void RenderTest::m_initializeEndPortal() {
+  const GfxType t[3] = {kGfxType_FLOAT3, kGfxType_FLOAT2, kGfxType_FLOAT4};
+  const GfxAttr a[3] = {kGfxAttr_Position, kGfxAttr_TexCoord0, kGfxAttr_Color};
+
+  const u16 indices[3 * 4] = {
+    0, 1, 2, 1, 3, 2,
+    0, 2, 1, 1, 2, 3,
+  };
+
+  endportalD.BeginDefinition("EndPortalTest", 4);
+  endportalD.AddVertexBuffer(
+    0,
+    t,
+    a,
+    3,
+    kGfxBind_UploadTriple,
+    0,
+    nullptr);
+  endportalD.AddIndexBuffer(
+    0, kGfxType_SHORT, kGfxBind_UploadSingle, 0x6, indices);
+  endportalD.EndDefinition();
+
+  RenderList *rl = scene->GetRenderListByName("Opaque");
+
+  endportalR.Initialize(&endportalD, resourceManager, "EndPortal", rl, 0, nullptr);
+  endportalR.AllocVertexSparse(0, nullptr, 0x400);
+
+  MaterialDefBarn::SetMaterialShaderUniforms(
+    endportalR.GetPipelineInstance(),
+    materialDefBarn->GetDef(kMaterial_None),
+    resourceManager);
+}
+
+void RenderTest::m_updateTerrain() {
+  ;
+}
+
+void RenderTest::m_updateEndPortal() {
+  GpuBuffer &gpuBuffer = endportalD.GetVertexBuffer(0);
+  void *mem = gpuBuffer.MapBuffer();
+  if (mem) {
+    float vao[9 * 4] = {
+      0,  1,  0, 0, 0, 0.5, 1, 0.5, 0.5,
+      0,  1, 10, 0, 1, 0.5, 1, 0.5, 0.5,
+      10, 1,  0, 1, 0, 0.5, 1, 0.5, 0.5,
+      10, 1, 10, 1, 0, 0.5, 1, 0.5, 0.5,
+    };
+    memcpy(mem, vao, sizeof(vao));
+    gpuBuffer.UnmapBuffer();
   }
 
-  GpuBuffer &matBuffer = matD.GetVertexBuffer(0);
-  TerrainDepthVertex *matData = (TerrainDepthVertex *)matBuffer.MapBuffer();
-  if (matData) {
-    memcpy(matData, sVerticesG, sizeof(sVerticesG));
-    matData[0].a_position[0] = x;
-    matData[0].a_position[2] = z;
-    matBuffer.UnmapBuffer();
-  }
-
-  depthR.Queue();
-  matR.Queue();
+  endportalR.Queue();
 }

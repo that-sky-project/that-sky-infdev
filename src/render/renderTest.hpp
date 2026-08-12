@@ -22,6 +22,12 @@ public:
   void onLevelUnload();
 
 private:
+  void m_initializeTerrain();
+  void m_initializeEndPortal();
+
+  void m_updateTerrain();
+  void m_updateEndPortal();
+
   Game *game = nullptr;
   Scene *scene = nullptr;
   ResourceManager *resourceManager = nullptr;
@@ -32,6 +38,9 @@ private:
   VertexRender matR;
   VertexData depthD;
   VertexData matD;
+
+  VertexRender endportalR;
+  VertexData endportalD;
 
   void *depthVtxBuffer;
   void *matVtxBuffer;

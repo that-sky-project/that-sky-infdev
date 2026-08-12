@@ -7,7 +7,7 @@ const DIST_DIR = "./dist";
 const ASSETS_DIR = "./assets";
 const ASSETS_DIST = pl.join(DIST_DIR, "assets");
 
-const SHADER_FLAGS = "-V -g";
+const SHADER_FLAGS = "-g";
 const SHADER_DIR = pl.join(ASSETS_DIR, "shaders");
 const SHADER_DIST = pl.join(ASSETS_DIST, "shaders");
 
@@ -56,7 +56,7 @@ function buildShader(srcPath, vkTarget) {
 
   // GLSL → SPIR-V
   const compileCmd =
-    `glslangValidator ${SHADER_FLAGS} --target-env ${vkTarget.env} "${srcPath}" -o "${spvPath}"`;
+    `glslc ${SHADER_FLAGS} --target-env=${vkTarget.env} "${srcPath}" -o "${spvPath}"`;
   console.log(`[BUILD] ${fileName}  ->  ${outBase}.spv  (${vkTarget.env})`);
   cp.execSync(compileCmd, { stdio: "inherit" });
 
@@ -155,7 +155,7 @@ function buildAllShaders() {
   buildBinaryReflections(reflEntries);
 
   // Phase 3: delete intermediate .refl.json
-  cleanReflJson(reflEntries);
+  //cleanReflJson(reflEntries);
 
   console.log("\nAll shaders built.");
 }
