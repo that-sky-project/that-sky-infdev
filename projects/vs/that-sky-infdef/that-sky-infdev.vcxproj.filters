@@ -25,6 +25,9 @@
     <Filter Include="src\render">
       <UniqueIdentifier>{ffe03444-b2fe-412f-853f-ca32ca44f79b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\mod\scriptEngine">
+      <UniqueIdentifier>{01f332b7-d6a8-40fc-a5b3-facff0907185}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\dllmain.cpp">
@@ -80,6 +83,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\mod\modbasecall.cpp">
       <Filter>src\mod</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\mod\scriptEngine\luacall.cpp">
+      <Filter>src\mod\scriptEngine</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -9,6 +9,8 @@
 #include "sky/skyScene.hpp"
 #include "sky/skyMaterialDefBarn.hpp"
 #include "sky/skyMetaHelper.hpp"
+#include "mod/base/override.hpp"
+#include "mod/scriptEngine/luacall.hpp"
 
 typedef void (*PFN_NetModule_Initialize)(
   void *, void *, void *, Game *, void *, void *);
@@ -133,6 +135,27 @@ static const u16 sIndicesG[6] = {0, 1, 2, 0, 2, 1};
 void RenderTest::initialize(
   Game *game
 ) {
+  lua_debugdostring(
+    GetOverride()->GetLua(),
+    "local shaders = {\"EndPortal\", \"SimpleColorTest\"}\n"
+    "\n"
+    "for i = 1, #shaders do\n"
+    "  local shaderName = shaders[i]\n"
+    "  if game:resources():GetResource(\"Shader\", shaderName) == nil then\n"
+    "    local res = Shader.new(game:resourceHeap())\n"
+    "    res:name(shaderName)\n"
+    "    res:heap(game:resourceHeap())\n"
+    "\n"
+    "    -- Resource parameters.\n"
+    "    res:group(\"Opaque\")\n"
+    "    res:vs(shaderName .. \".vert\")\n"
+    "    res:fs(shaderName .. \".frag\")\n"
+    "\n"
+    "    game:resources():LoadImmediate(res)\n"
+    "  end\n"
+    "end\n"
+  );
+
   materialDefBarn = game->resolveMember<MaterialDefBarn *>("materialDefBarn");
   resourceManager = game->resolveMember<ResourceManager *>("resources");
   heap = game->resolveMember<Heap *>("levelHeap");
