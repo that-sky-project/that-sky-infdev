@@ -2,7 +2,8 @@
 #include <includes/htmodloader.h>
 #include "utils/htmodloader.hpp"
 #include "sky/skyGame.hpp"
-#include "mod/meta.hpp"
+#include "mod/base/override.hpp"
+#include "mod/base/proxyMetaSystem.hpp"
 
 typedef void (__fastcall *PFN_MetaSystem_Initialize)(
   FakeMetaSystem *);
@@ -13,9 +14,7 @@ typedef const MetaClass *(__fastcall *PFN_GetMetaClassById)(
 typedef const MetaClass *(__fastcall *PFN_GetMetaClassByName)(
   cstring, bool);
 
-FakeMetaSystem *gMetaSystem = nullptr;
-ProxyMetaSystem *gProxyMetaSystem = nullptr;
-Game *gGame = nullptr;
+static FakeMetaSystem *g_metaSystemCache = nullptr;
 
 static const HTAsmSig sigE8_MetaSystem_Initialize{
   "31 D2 E8 ?  ?  ?  ?  48 89 D9 E8 ?  ?  ?  ?  B9 "
@@ -77,85 +76,16 @@ static void hook_MetaSystem_Initialize(
 ) {
   ((PFN_MetaSystem_Initialize)sfn_MetaSystem_Initialize.origin)(self);
 
-  gMetaSystem = self;
+  g_metaSystemCache = self;
 }
 
 static void hook_Game_Alloc(
   Game *self
 ) {
-  const auto &classes = gMetaSystem->data->m_metaClasses;
-
-  // Resolve sizeof(MetaSystem).
-  const auto &itMetaSystem = classes.find("MetaSystem");
-  if (itMetaSystem == classes.end())
-    return ((PFN_Game_Alloc)sfn_Game_Alloc.origin)(self);
-
-  const MetaClass *pmcMetaSystem = itMetaSystem->second;
-  size_t sizeMetaSystem = pmcMetaSystem->SizeOfObject();
-  u32 classCount = (sizeMetaSystem - sizeof(FakeMetaSystem)) / sizeof(const MetaClass *);
-
-  // Resolve Game.metaSystem.
-  const auto &itGame = classes.find("Game");
-  if (itGame == classes.end())
-    return ((PFN_Game_Alloc)sfn_Game_Alloc.origin)(self);
-
-  const MetaClass *pmcGame = itGame->second;
-  const auto &variables = pmcGame->m_metaDataContainer->m_variables;
-  const auto &itVars = variables.find("metaSystem");
-  if (itVars == variables.end())
-    return ((PFN_Game_Alloc)sfn_Game_Alloc.origin)(self);
-
-  // Override Game.metaSystem.
-  const MetaMemberVariable *pmmvMetaSystem = itVars->second;
-  //ProxyMetaSystem **ppGameMetaSystem = (ProxyMetaSystem **)((char *)self + pmmvMetaSystem->GetContext().offset);
-  ProxyMetaSystem **ppGameMetaSystem = 
-    &(self->*reinterpret_cast<ProxyMetaSystem *Game::*>(pmmvMetaSystem->Address()));
-
-  // Create ProxyMetaSystem from MetaSystem.
-  gProxyMetaSystem = ProxyMetaSystem::create();
-
-  // Subtract 15 from the calculated maximum number of classes so that the UIDs of
-  // newly added metaclasses are less than 2560.
-  //
-  // WARN: This is an unsafe and highly incompatible implementation, intended for
-  // use in this example only. Do not use it in actual development.
-  gProxyMetaSystem->set(
-    reinterpret_cast<const MetaSystemExample *>(gMetaSystem),
-    classCount);
-
-  HTTellText(
-    "§a[ThatSkyInfdev] MetaSystem overriden: %p -> %p",
-    *ppGameMetaSystem,
-    gProxyMetaSystem);
-  HTTellText(
-    "§e[ThatSkyInfdev] Copied %u classes of %llu classes",
-    gProxyMetaSystem->m_data->m_count,
-    gProxyMetaSystem->m_data->m_metaClasses.size());
-
-  const MetaSystemExample *old = reinterpret_cast<const MetaSystemExample *>(*ppGameMetaSystem);
-
-  HTTellText("§a[ThatSkyInfdev] Destroying previous.....");
-  // Call destructor of MetaStrMap.
-  delete old->m_data;
-  // Directly free the memory.
-  operator delete((void *)old);
-
-  *ppGameMetaSystem = gProxyMetaSystem;
-
-  // - Register new metadata.
-  gProxyMetaSystem->submitChain(MetaObject<MetaType>::m_List());
-  gProxyMetaSystem->submitChain(MetaObject<MetaMemberFunction>::m_List());
-  gProxyMetaSystem->submitChain(MetaObject<MetaMemberVariable>::m_List());
-
-  SetMetaSystem(
-    gProxyMetaSystem,
-    [](const void *user, i32 id) -> LPCMetaClass {
-      return static_cast<const ProxyMetaSystem *>(user)->get(id);
-    },
-    [](const void *user, cstring name, bool) -> LPCMetaClass {
-      return static_cast<const ProxyMetaSystem *>(user)->get(name);
-    }
-  );
+  Override *ov = new Override();
+  ov->Initialize(g_metaSystemCache, self);
+  // Reset the cache because it is freed.
+  g_metaSystemCache = nullptr;
 
   ((PFN_Game_Alloc)sfn_Game_Alloc.origin)(self);
 }
@@ -163,7 +93,7 @@ static void hook_Game_Alloc(
 static LPCMetaClass hook_GetMetaClassById(
   u32 id
 ) {
-  if (!gProxyMetaSystem)
+  if (!GetOverride())
     return ((PFN_GetMetaClassById)sfn_GetMetaClassById.origin)(id);
 
   return GetMetaClassById(id);
@@ -173,7 +103,7 @@ static LPCMetaClass hook_GetMetaClassByName(
   cstring name,
   bool isConstString
 ) {
-  if (!gProxyMetaSystem)
+  if (!GetOverride())
     return ((PFN_GetMetaClassByName)sfn_GetMetaClassByName.origin)(name, isConstString);
 
   return GetMetaClassByName(name);

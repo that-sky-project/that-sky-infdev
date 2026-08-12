@@ -1,4 +1,4 @@
-#include "mod/meta.hpp"
+#include "mod/base/proxyMetaSystem.hpp"
 
 ProxyMetaSystemDataContainer &ProxyMetaSystemDataContainer::operator=(
   const MetaSystemDataContainer &rhs

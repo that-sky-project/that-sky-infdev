@@ -33,9 +33,6 @@
     <ClCompile Include="..\..\..\src\mod\entry.cpp">
       <Filter>src\mod</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\mod\mod.cpp">
-      <Filter>src\mod</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\mod\base\baseHooks.cpp">
       <Filter>src\mod\base</Filter>
     </ClCompile>

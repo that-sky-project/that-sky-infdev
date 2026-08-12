@@ -3,7 +3,7 @@
 
 #include <thread>
 #include <Base/Meta.hpp>
-#include "mod/meta.hpp"
+#include "mod/base/proxyMetaSystem.hpp"
 #include "sky/skyGame.hpp"
 
 class Override {
@@ -11,27 +11,23 @@ public:
   Override() = default;
   ~Override() = default;
 
-  void initialize();
+  void Initialize(
+    FakeMetaSystem *metaSystem,
+    Game *game);
 
-  void setMetaSystem(
-    FakeMetaSystem *self);
-
-  void overrideMetaSystem(
-    Game *target);
-  void overrideGame();
-
-  LPCMetaClass getMetaClassById(
-    u32 id
-  ) const;
-  LPCMetaClass getMetaClassByName(
-    cstring name,
-    bool isConstString
-  ) const;
+  lua_State *GetLua();
 
 private:
+  void m_OverrideMetaSystem(
+    FakeMetaSystem *metaSystem);
+  void m_OverrideModObject();
+
   std::thread::id m_mainThread = {};
+  ProxyMetaSystem *m_proxyMetaSystem = nullptr;
+  Game *m_game = nullptr;
+  lua_State *m_lua = nullptr;
 };
 
-Override &getOverride();
+Override *GetOverride();
 
 #endif

@@ -104,7 +104,6 @@
     <ClCompile Include="..\..\..\src\mod\base\override.cpp" />
     <ClCompile Include="..\..\..\src\mod\base\proxyMetaSystem.cpp" />
     <ClCompile Include="..\..\..\src\mod\entry.cpp" />
-    <ClCompile Include="..\..\..\src\mod\mod.cpp" />
     <ClCompile Include="..\..\..\src\mod\modbasecall.cpp" />
     <ClCompile Include="..\..\..\src\render\renderTest.cpp" />
     <ClCompile Include="..\..\..\src\render\terrainRender.cpp" />
