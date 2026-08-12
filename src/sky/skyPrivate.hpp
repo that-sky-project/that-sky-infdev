@@ -6,6 +6,16 @@
 
 namespace Private {
 
+inline constexpr cstring FileName(cstring path) {
+  const char *start = path;
+  for (const char *p = path; *p != '\0'; ++p) {
+    if (*p == '/' || *p == '\\') {
+      start = p + 1;
+    }
+  }
+  return start;
+}
+
 void AssertImpl(
   cstring expr,
   cstring file,
@@ -22,7 +32,15 @@ void AssertMsgImpl(
 
 }
 
-#define Assert(expr) ((void)(!(expr) && (Private::AssertImpl(#expr, __FILE__, __LINE__, 3), __debugbreak(), abort(), 1)))
-#define AssertMsg(expr, msg, ...) ((void)(!(expr) && (Private::AssertMsgImpl(#expr, __FILE__, __LINE__, 3, msg, ## __VA_ARGS__), __debugbreak(), abort(), 1)))
+#define Assert(expr) \
+  do {\
+    constexpr cstring FILENAME = Private::FileName(__FILE__);\
+    ((void)(!(expr) && (Private::AssertImpl(#expr, FILENAME, __LINE__, 3), __debugbreak(), abort(), 1)));\
+  } while (0)
+#define AssertMsg(expr, msg, ...) \
+  do {\
+    constexpr cstring FILENAME = Private::FileName(__FILE__);\
+    ((void)(!(expr) && (Private::AssertMsgImpl(#expr, FILENAME, __LINE__, 3, msg, ## __VA_ARGS__), __debugbreak(), abort(), 1)));\
+  } while (0)
 
 #endif

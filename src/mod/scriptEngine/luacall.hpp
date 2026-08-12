@@ -8,4 +8,7 @@ void lua_debugdostring(
   lua_State *L,
   cstring s);
 
+void lua_debugdofile(
+  lua_State *L);
+
 #endif
