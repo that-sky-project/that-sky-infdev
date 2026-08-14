@@ -87,5 +87,8 @@
     <ClCompile Include="..\..\..\src\mod\scriptEngine\luacall.cpp">
       <Filter>src\mod\scriptEngine</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\mod\modobject.cpp">
+      <Filter>src\mod</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

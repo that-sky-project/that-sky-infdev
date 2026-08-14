@@ -14,4 +14,7 @@ META_DECLARE_CLASS(AvatarBarn)
 class Avatar { };
 META_DECLARE_CLASS(Avatar)
 
+class Module: public Object { };
+META_DECLARE_CLASS(Module);
+
 #endif

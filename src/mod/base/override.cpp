@@ -1,5 +1,7 @@
+#include <vector>
 #include <includes/htmodloader.h>
 #include "mod/base/override.hpp"
+#include "mod/modobject.hpp"
 
 static Override *g_Override = nullptr;
 
@@ -122,8 +124,88 @@ void Override::m_OverrideMetaSystem(
   );
 }
 
-void Override::m_OverrideModObject() {
+// Module reference storage.
+struct ModuleRawState {
+  // Store the member function states.
+  ModuleRawState &Initialize(
+    const MetaMemberVariable *var
+  ) {
+    Assert(var);
+    mmv = var;
 
+    LPCMetaClass mc = mmv->GetType()->AsClass();
+    AssertMsg(mc, "Module Game::%s is not a class", mmv->GetName());
+
+    type = mc;
+
+    for (const auto &it: mc->m_metaDataContainer->m_functions) {
+      const auto &sig = it.second->GetSignature();
+
+      for (int i = 0; i < sig.argCount; i++) {
+        refs.push_back(sig.argArray[i]);
+      }
+    }
+
+    return *this;
+  }
+
+  const MetaMemberVariable *mmv = nullptr;
+  LPCMetaClass type = nullptr;
+  std::vector<LPCMetaType> refs = {};
+};
+
+static inline bool s_HasNonLifecycleFunction(
+  const MetaMemberVariable *mmv
+) {
+  LPCMetaClass mc = mmv->GetType()->AsClass();
+  AssertMsg(mc, "Module Game::%s is not a class", mmv->GetName());
+
+  for (const auto &it: mc->m_metaDataContainer->m_functions) {
+    for (int i = 0; i < Override::kLifecycleFuncCount; i++) {
+      if (!strcmp(it.first, Override::kLifecycleFuncs[i]))
+        return true;
+    }
+  }
+
+  return false;
+}
+
+void Override::m_OverrideModObject() {
+  LPCMetaClass mcGame = m_proxyMetaSystem->get("Game");
+  auto &variables = mcGame->m_metaDataContainer->m_variables;
+
+  auto itmmv = variables.find("persistentLines");
+  Assert(itmmv != variables.end());
+
+  auto address = itmmv->second->Address();
+
+  variables.erase("persistentLines");
+
+  MetaMemberVariable *mmv = new MetaMemberVariable(
+    "mod", reinterpret_cast<Mod *Game::*>(address));
+  MetaData *md1 = new MetaData(*mmv, "ModuleGroup", "Game");
+  MetaData *md2 = new MetaData(*mmv, "ClearMemory", "NONE");
+
+  variables[strdup("mod")] = mmv;
+
+  return;
+
+  // Collect all modules of Game.
+  std::vector<ModuleRawState> valid;
+  for (const auto &it: variables) {
+    cstring moduleGroup = it.second->GetMetaData("ModuleGroup");
+    if (!moduleGroup || !strcmp(moduleGroup, "Dev") || !strcmp(moduleGroup, "Disabled"))
+      continue;
+
+    // Skip if the module contains function outside lifecycle functions.
+    if (s_HasNonLifecycleFunction(it.second))
+      continue;
+
+    valid.push_back(ModuleRawState().Initialize(it.second));
+  }
+
+  // Check function signature and drop modules that is referenced by other module.
+  std::vector<const MetaMemberVariable *> candidate;
 }
 
 Override *GetOverride() {

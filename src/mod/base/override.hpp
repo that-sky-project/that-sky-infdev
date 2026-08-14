@@ -8,6 +8,30 @@
 
 class Override {
 public:
+  static constexpr int kLifecycleFuncCount = 0x14;
+  static constexpr cstring kLifecycleFuncs[kLifecycleFuncCount] = {
+    "Initialize",
+    "Terminate",
+    "OnLevelLoadEarly",
+    "OnLevelLoad",
+    "OnLevelLoadLate",
+    "OnLevelUnload",
+    "OnLevelUnloadLate",
+    "HotLoad",
+    "HotUnload",
+    "Resize",
+    "Update",
+    "UpdateLate",
+    "UpdateBackground",
+    "BuildScene",
+    "RenderFlush",
+    "PostRender",
+    "OnPause",
+    "OnUnpause",
+    "OnSuspend",
+    "OnEvent"
+  };
+
   Override() = default;
   ~Override() = default;
 
