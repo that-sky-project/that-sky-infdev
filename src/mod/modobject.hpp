@@ -3,7 +3,7 @@
 
 #include <Base/Meta.hpp>
 #include "sky/skyGame.hpp"
-#include "sky/skyTypePlaceholders.hpp"
+#include "mod/moduleBarnExt.hpp"
 
 class Mod;
 META_DECLARE_CLASS(Mod)
@@ -13,12 +13,10 @@ public:
   Mod() { m_metaClassId = MetaClassId(Mod); }
   ~Mod() = default;
 
-  void FunctionProxy(cstring name);
-
   void Initialize(Game *);
   void Terminate();
   void OnLevelLoadEarly();
-  void OnLevelLoad();
+  void OnLevelLoad(cstring levelName);
   void OnLevelLoadLate();
   void OnLevelUnload();
   void OnLevelUnloadLate();

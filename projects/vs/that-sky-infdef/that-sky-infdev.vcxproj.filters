@@ -90,5 +90,8 @@
     <ClCompile Include="..\..\..\src\mod\modobject.cpp">
       <Filter>src\mod</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\mod\moduleBarnExt.cpp">
+      <Filter>src\mod</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
