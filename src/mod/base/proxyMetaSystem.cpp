@@ -1,4 +1,5 @@
 #include "mod/base/proxyMetaSystem.hpp"
+#include "utils/stringUtils.hpp"
 
 ProxyMetaSystemDataContainer &ProxyMetaSystemDataContainer::operator=(
   const MetaSystemDataContainer &rhs
@@ -62,8 +63,8 @@ bool ProxyMetaSystem::submitChain(
     // and a child class is always loaded after its parent class, this initialization
     // process is guaranteed to be stable.
     // 
-    // Thus, an external module only needs to declare an "empty" MetaType with the
-    // same name to use the MetaType of its dependency.
+    // Thus, the ProxyMetaSystem promises an external module only needs to declare
+    // an "empty" MetaType with the same name to use the MetaType of its dependency.
     cstring name = p->GetName();
     const auto &itType = m_data->m_metaTypes.find(name);
     if (itType != m_data->m_metaTypes.end()) {
@@ -72,9 +73,7 @@ bool ProxyMetaSystem::submitChain(
     }
 
     // Copy the name string for easy searching.
-    size_t l = strlen(name) + 1;
-    char *s = new char[l];
-    strncpy(s, p->GetName(), l);
+    cstring s = StringUtils::StrDup(p->GetName());
 
     // Copy the MetaType (or MetaClass).
     auto mt = p->Copy();
@@ -83,7 +82,7 @@ bool ProxyMetaSystem::submitChain(
     p->SetActive(mt);
 
     m_data->m_metaTypes[mt->GetName()] = mt;
-  
+
     if (!p->AsClass())
       continue;
 
@@ -118,16 +117,16 @@ bool ProxyMetaSystem::submitChain(
     cstring name = p->GetName();
     p->Initialize();
 
-    // Copy the name string for easy searching.
-    size_t l = strlen(name) + 1;
-    char *s = new char[l];
-    strncpy(s, p->GetName(), l);
+    // Copy the name string.
+    cstring s = StringUtils::StrDup(p->GetName());
 
     auto &store = p->GetClass()->m_metaDataContainer->m_functions;
     if (store.find(name) != store.end())
       continue;
 
-    store.emplace(name, new MetaMemberFunction(*p));
+    auto *mmf = new MetaMemberFunction(*p);
+    mmf->SetName(s);
+    store.emplace(name, mmf);
   }
 
   return true;
@@ -142,16 +141,16 @@ bool ProxyMetaSystem::submitChain(
   for (auto p = chain; p; p = p->GetPrev()) {
     cstring name = p->GetName();
 
-    // Copy the name string for easy searching.
-    size_t l = strlen(name) + 1;
-    char *s = new char[l];
-    strncpy(s, p->GetName(), l);
+    // Copy the name string.
+    cstring s = StringUtils::StrDup(p->GetName());
 
     auto &store = p->GetClass()->m_metaDataContainer->m_variables;
     if (store.find(name) != store.end())
       continue;
 
-    store.emplace(name, new MetaMemberVariable(*p));
+    auto *mmv = new MetaMemberVariable(*p);
+    mmv->SetName(s);
+    store.emplace(name, mmv);
   }
 
   return true;
