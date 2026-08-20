@@ -13,7 +13,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lua", "..\..\libraries\that
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "dlmalloc", "..\..\libraries\that-sky-engine\project\vs\dlmalloc\dlmalloc.vcxproj", "{CFE23793-7429-4E10-8E7B-1865CF2E5DE5}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "that-sky-infdev", "that-sky-infdef\that-sky-infdev.vcxproj", "{1BADAE65-E86E-4FFF-8257-C61894877BA9}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "that-sky-infdev", "that-sky-infdev\that-sky-infdev.vcxproj", "{1BADAE65-E86E-4FFF-8257-C61894877BA9}"
 	ProjectSection(ProjectDependencies) = postProject
 		{36746F61-C86E-44E6-8DE9-6484407AD6B1} = {36746F61-C86E-44E6-8DE9-6484407AD6B1}
 	EndProjectSection
