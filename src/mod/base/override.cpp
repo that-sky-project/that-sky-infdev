@@ -1,5 +1,6 @@
 #include <vector>
 #include <includes/htmodloader.h>
+#include "utils/stringUtils.hpp"
 #include "mod/base/override.hpp"
 #include "mod/modobject.hpp"
 
@@ -186,7 +187,7 @@ void Override::m_OverrideModObject() {
   MetaData *md1 = new MetaData(*mmv, "ModuleGroup", "Game");
   MetaData *md2 = new MetaData(*mmv, "ClearMemory", "NONE");
 
-  variables[strdup("mod")] = mmv;
+  variables[StringUtils::StrDup("mod")] = mmv;
 
   return;
 
