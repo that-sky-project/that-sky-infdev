@@ -4,6 +4,7 @@
 #include "sky/skyGame.hpp"
 #include "mod/base/override.hpp"
 #include "mod/base/proxyMetaSystem.hpp"
+#include "mod/base/baseHooks.hpp"
 
 typedef void (__fastcall *PFN_MetaSystem_Initialize)(
   FakeMetaSystem *);
@@ -109,7 +110,7 @@ static LPCMetaClass hook_GetMetaClassByName(
   return GetMetaClassByName(name);
 }
 
-void MetaSystemOverride::initialize() {
+void BaseHooks::Initialize() {
   sfn_MetaSystem_Initialize.detour = (void *)hook_MetaSystem_Initialize;
   HTModLoader::createHookAndEnable(
     &sigE8_MetaSystem_Initialize,

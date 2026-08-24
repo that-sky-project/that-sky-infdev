@@ -1,5 +1,5 @@
-#ifndef __MOD_META_HPP__
-#define __MOD_META_HPP__
+#ifndef __MOD_BASE_PROXYMETASYSTEM_HPP__
+#define __MOD_BASE_PROXYMETASYSTEM_HPP__
 
 #include <map>
 #include <unordered_map>
@@ -74,9 +74,5 @@ public:
   ProxyMetaSystemDataContainer *m_data;
   const MetaClass *m_classes[];
 };
-
-namespace MetaSystemOverride {
-void initialize();
-}
 
 #endif

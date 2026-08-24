@@ -1,6 +1,6 @@
 #include <Windows.h>
 #include <includes/htmod.h>
-#include "mod/base/proxyMetaSystem.hpp"
+#include "mod/base/baseHooks.hpp"
 #include "mod/modbasecall.hpp"
 #include "render/renderTest.hpp"
 
@@ -9,8 +9,8 @@ HMODULE hModuleDll = NULL;
 __declspec(dllexport) HTStatus HTMLAPI HTModOnInit(
   void *reserved
 ) {
-  MetaSystemOverride::initialize();
   Modbase::RegisterAssets();
+  BaseHooks::Initialize();
   return HT_SUCCESS;
 }
 
