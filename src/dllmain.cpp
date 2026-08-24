@@ -10,7 +10,6 @@ __declspec(dllexport) HTStatus HTMLAPI HTModOnInit(
   void *reserved
 ) {
   MetaSystemOverride::initialize();
-  RenderTest::installHook();
   Modbase::RegisterAssets();
   return HT_SUCCESS;
 }

@@ -31,9 +31,22 @@ void Mod::Initialize(
   Game *game
 ) {
   m_game = game;
+
+  m_moduleBarnExt = new ModuleBarnExt();
+  m_moduleBarnExt->Initialize(game);
+
+  m_renderTest = new RenderTest();
+  m_renderTest->Initialize(game);
 }
 
-void Mod::Terminate() {}
+void Mod::Terminate() {
+  m_renderTest->Terminate();
+  delete m_renderTest;
+
+  m_moduleBarnExt->Terminate();
+  delete m_moduleBarnExt;
+}
+
 void Mod::OnLevelLoadEarly() { }
 
 void Mod::OnLevelLoad(
@@ -51,6 +64,7 @@ void Mod::Resize() { }
 
 void Mod::Update() {
   //HTTellText("Mod::Update(%p)", m_game);
+  m_renderTest->Update();
 }
 
 void Mod::UpdateLate() { }

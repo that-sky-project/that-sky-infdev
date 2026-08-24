@@ -4,6 +4,7 @@
 #include <Base/Meta.hpp>
 #include "sky/skyGame.hpp"
 #include "mod/moduleBarnExt.hpp"
+#include "render/renderTest.hpp"
 
 class Mod;
 META_DECLARE_CLASS(Mod)
@@ -36,6 +37,8 @@ public:
 
 private:
   Game *m_game = nullptr;
+  ModuleBarnExt *m_moduleBarnExt = nullptr;
+  RenderTest *m_renderTest = nullptr;
 };
 
 #endif

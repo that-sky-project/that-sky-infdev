@@ -57,85 +57,15 @@ struct TerrainDepthVertex {
   f32 a_position[3] = {0};
 };
 
-static RenderTest *gRenderTest = nullptr;
-//static u08 gBuffer[sizeof(RenderTest)] = {0};
-
-static HTAsmFunction sfn_NetModule_Initialize = {
-  "NetModule::Initialize()",
-  nullptr,
-  nullptr,
-  nullptr
-};
-
-static HTAsmFunction sfn_NetModule_Update = {
-  "NetModule::Update()",
-  nullptr,
-  nullptr,
-  nullptr
-};
-
-static void hook_NetModule_Initialize(
-  void *a1,
-  void *a2,
-  void *a3,
-  Game *a4,
-  void *a5,
-  void *a6,
-  void *a7
-) {
-  ((PFN_NetModule_Initialize)sfn_NetModule_Initialize.origin)(
-    a1, a2, a3, a4, a5, a6);
-}
-
-static void hook_NetModule_Update(
-  void *a1,
-  Game *a2,
-  void *a3,
-  void *a4,
-  void *a5,
-  void *a6,
-  void *a7
-) {
-  ((PFN_NetModule_Update)sfn_NetModule_Update.origin)(
-    a1, a2, a3, a4, a5, a6);
-
-  if (!gRenderTest) {
-    //gRenderTest = new RenderTest();
-    // Allocate the RenderTest object in a single memory page to set memory
-    // R/W breakpoints.
-    //void *buffer = VirtualAlloc((void *)0x0000001145140000ull, 0x1000, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-    void *buffer = VirtualAlloc(nullptr, 0x2000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
-    Assert(buffer);
-    new (buffer) RenderTest();
-    gRenderTest = (RenderTest *)buffer;
-    gRenderTest->initialize(a2);
-  } else {
-    gRenderTest->update();
-  }
-}
-
-// We attatch the render module to NetModule.
-void RenderTest::installHook() {
-  uintptr_t baseAddr = (uintptr_t)GetModuleHandleA(nullptr);
-
-  sfn_NetModule_Initialize.fn = (void *)(baseAddr + 0x00CF96F0);
-  sfn_NetModule_Initialize.detour= (void *)hook_NetModule_Initialize;
-  HTModLoader::createHookAndEnable(nullptr, &sfn_NetModule_Initialize);
-
-  sfn_NetModule_Update.fn = (void *)(baseAddr + 0x00CFA5B0);
-  sfn_NetModule_Update.detour= (void *)hook_NetModule_Update;
-  HTModLoader::createHookAndEnable(nullptr, &sfn_NetModule_Update);
-}
-
 static const TerrainDepthVertex sVerticesT[3] = {{0, 1, 0}, {0, 1, 100}, {100, 1, 100}};
 static const GrassShVertex sVerticesG[3] = {{0, 1, 0}, {0, 1, 100}, {100, 1, 100}};
 static const u16 sIndicesT[6] = {0, 1, 2, 0, 2, 1};
 static const u16 sIndicesG[6] = {0, 1, 2, 0, 2, 1};
 
-void RenderTest::initialize(
+void RenderTest::Initialize(
   Game *game
 ) {
-  lua_debugdostring(
+  /*lua_debugdostring(
     GetOverride()->GetLua(),
     "local shaders = {\"EndPortal\", \"SimpleColorTest\"}\n"
     "\n"
@@ -151,10 +81,12 @@ void RenderTest::initialize(
     "    res:vs(shaderName .. \".vert\")\n"
     "    res:fs(shaderName .. \".frag\")\n"
     "\n"
+    "    res:IncLoadCount()\n"
+    "    res:IncLoadCount()\n"
     "    game:resources():LoadImmediate(res)\n"
     "  end\n"
     "end\n"
-  );
+  );*/
 
   materialDefBarn = game->resolveMember<MaterialDefBarn *>("materialDefBarn");
   resourceManager = game->resolveMember<ResourceManager *>("resources");
@@ -166,20 +98,45 @@ void RenderTest::initialize(
   HTTellText("§c[ThatSkyInfdev] game.levelHeap = %p", heap);
   HTTellText("§c[ThatSkyInfdev] game.scene = %p", scene);
 
-  m_initializeTerrain();
-  m_initializeEndPortal();
+  m_InitializeTerrain();
+  m_InitializeEndPortal();
 }
 
-void RenderTest::update() {
-  m_updateTerrain();
-  m_updateEndPortal();
+void RenderTest::Terminate() {
+  m_TerminateTerrain();
+  m_TerminateEndPortal();
 }
 
-void RenderTest::m_initializeTerrain() {
+void RenderTest::Update() {
+  m_UpdateTerrain();
+  m_UpdateEndPortal();
+}
+
+void RenderTest::m_InitializeTerrain() {
   ;
 }
 
-void RenderTest::m_initializeEndPortal() {
+void RenderTest::m_InitializeEndPortal() {
+  // Load shader.
+  lua_debugdostring(
+    GetOverride()->GetLua(),
+    "local res = game:resources():GetResource(\"Shader\", \"EndPortal\")\n"
+    "if res == nil then\n"\
+    "  res = Shader.new(game:resourceHeap())"
+    "  res:name(\"EndPortal\")\n"
+    "  res:heap(game:resourceHeap())\n"
+    "\n"
+    "  -- Resource parameters.\n"
+    "  res:group(\"Opaque\")\n"
+    "  res:vs(\"EndPortal.vert\")\n"
+    "  res:fs(\"EndPortal.frag\")\n"
+    "\n"
+    "  game:resources():LoadImmediate(res)\n"
+    "end\n"
+    "\n"
+    "res:IncLoadCount()\n"
+  );
+
   const GfxType t[3] = {kGfxType_FLOAT3, kGfxType_FLOAT2, kGfxType_FLOAT4};
   const GfxAttr a[3] = {kGfxAttr_Position, kGfxAttr_TexCoord0, kGfxAttr_Color};
 
@@ -212,11 +169,33 @@ void RenderTest::m_initializeEndPortal() {
     resourceManager);
 }
 
-void RenderTest::m_updateTerrain() {
+void RenderTest::m_TerminateTerrain() {
   ;
 }
 
-void RenderTest::m_updateEndPortal() {
+void RenderTest::m_TerminateEndPortal() {
+  // Unload shader.
+  lua_debugdostring(
+    GetOverride()->GetLua(),
+    "local res = game:resources():GetResource(\"Shader\", \"EndPortal\")\n"
+    "if res ~= nil then\n"
+    "  res:DecLoadCount()\n"
+    "  if res:GetLoadCount() == 0 then\n"
+    "    game:resources():UnloadImmediate(res)\n"
+    "    Shader.delete(res, game:resourceHeap())\n"
+    "  end\n"
+    "end\n"
+  );
+
+  //endportalR.Terminate();
+  endportalD.Release();
+}
+
+void RenderTest::m_UpdateTerrain() {
+  ;
+}
+
+void RenderTest::m_UpdateEndPortal() {
   GpuBuffer &gpuBuffer = endportalD.GetVertexBuffer(0);
   void *mem = gpuBuffer.MapBuffer();
   if (mem) {

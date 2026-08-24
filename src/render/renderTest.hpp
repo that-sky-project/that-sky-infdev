@@ -10,23 +10,25 @@
 
 class RenderTest {
 public:
-  static void installHook();
-
   RenderTest() = default;
   ~RenderTest() = default;
 
-  void initialize(
+  void Initialize(
     Game *game);
-  void update();
-  void onLevelLoad();
-  void onLevelUnload();
+  void Terminate();
+  void Update();
+  void OnLevelLoad();
+  void OnLevelUnload();
 
 private:
-  void m_initializeTerrain();
-  void m_initializeEndPortal();
+  void m_InitializeTerrain();
+  void m_InitializeEndPortal();
 
-  void m_updateTerrain();
-  void m_updateEndPortal();
+  void m_TerminateTerrain();
+  void m_TerminateEndPortal();
+
+  void m_UpdateTerrain();
+  void m_UpdateEndPortal();
 
   Game *game = nullptr;
   Scene *scene = nullptr;
