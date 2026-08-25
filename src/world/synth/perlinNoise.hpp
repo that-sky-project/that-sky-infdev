@@ -21,9 +21,7 @@ public:
   }
 
   ~PerlinNoise() {
-    for (i32 i = 0; i < m_levels; ++i)
-      delete m_noiseLevels[i];
-    delete[] m_noiseLevels;
+    Terminate();
   }
 
   inline void Initialize(i32 levels) {
@@ -32,6 +30,12 @@ public:
     for (i32 i = 0; i < levels; i++) {
       m_noiseLevels[i] = new ImprovedNoise(m_rndPtr);
     }
+  }
+
+  inline void Terminate() {
+    for (i32 i = 0; i < m_levels; ++i)
+      delete m_noiseLevels[i];
+    delete[] m_noiseLevels;
   }
 
   inline virtual f32 GetValue(
@@ -110,11 +114,11 @@ public:
   }
 
 private:
-  ImprovedNoise **m_noiseLevels;
-  i32 m_levels;
+  ImprovedNoise **m_noiseLevels = nullptr;
+  i32 m_levels = 0;
 
   Random m_random;
-  Random *m_rndPtr;
+  Random *m_rndPtr = nullptr;
 };
 
 #endif
