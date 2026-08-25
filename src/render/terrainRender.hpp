@@ -93,8 +93,8 @@ private:
   MaterialDefBarn *m_materialDefBarn = nullptr;
 
   // - Renderer variables.
-  VertexRender m_depthR;
-  VertexRender m_matR;
+  VertexRenderSparse m_depthR;
+  VertexRenderSparse m_matR;
   VertexData m_depthD;
   VertexData m_matD;
 

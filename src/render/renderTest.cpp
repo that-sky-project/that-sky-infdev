@@ -141,11 +141,11 @@ void RenderTest::m_InitializeEndPortal() {
   const GfxAttr a[3] = {kGfxAttr_Position, kGfxAttr_TexCoord0, kGfxAttr_Color};
 
   const u16 indices[3 * 4] = {
-    0, 1, 2, 1, 3, 2,
-    0, 2, 1, 1, 2, 3,
+    0, 1, 2, 2, 3, 0,
+    4, 5, 6, 6, 7, 4,
   };
 
-  endportalD.BeginDefinition("EndPortalTest", 4);
+  endportalD.BeginDefinition("EndPortalTest", 8);
   endportalD.AddVertexBuffer(
     0,
     t,
@@ -155,13 +155,14 @@ void RenderTest::m_InitializeEndPortal() {
     0,
     nullptr);
   endportalD.AddIndexBuffer(
-    0, kGfxType_SHORT, kGfxBind_UploadSingle, 0x6, indices);
+    0, kGfxType_SHORT, kGfxBind_UploadSingle, 12, indices);
   endportalD.EndDefinition();
 
   RenderList *rl = scene->GetRenderListByName("Opaque");
 
   endportalR.Initialize(&endportalD, resourceManager, "EndPortal", rl, 0, nullptr);
-  endportalR.AllocVertexSparse(0, nullptr, 0x400);
+  endportalR.SetPrimitiveCapacity(0x6);
+  //endportalR.AllocVertexSparse(0, nullptr, 0x400);
 
   MaterialDefBarn::SetMaterialShaderUniforms(
     endportalR.GetPipelineInstance(),
@@ -202,9 +203,10 @@ void RenderTest::m_UpdateEndPortal() {
     float vao[9 * 4] = {
       0,  1,  0, 0, 0, 0.5, 1, 0.5, 0.5,
       0,  1, 10, 0, 1, 0.5, 1, 0.5, 0.5,
-      10, 1,  0, 1, 0, 0.5, 1, 0.5, 0.5,
       10, 1, 10, 1, 0, 0.5, 1, 0.5, 0.5,
+      10, 1,  0, 1, 0, 0.5, 1, 0.5, 0.5,
     };
+    memset(mem, 0, 9 * 8);
     memcpy(mem, vao, sizeof(vao));
     gpuBuffer.UnmapBuffer();
   }
