@@ -10,8 +10,7 @@ public:
   BlockVolume(
     u32 xL,
     u32 yL,
-    u32 zL,
-    Block placeholder = 
+    u32 zL
   ) {
 
   }

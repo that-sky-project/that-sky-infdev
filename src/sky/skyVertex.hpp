@@ -160,6 +160,11 @@ private:
 };
 
 class VertexRender {
+private:
+  VertexRender(const VertexRender &) = default;
+  VertexRender(VertexRender &&) = default;
+  VertexRender &operator=(const VertexRender &) = default;
+
 public:
   enum: u08 {
     kPrimitiveType_PointList = 0,
@@ -170,7 +175,7 @@ public:
     kPrimitiveType_TriangleFan,
   };
 
-  explicit VertexRender();
+  VertexRender();
   ~VertexRender() = default;
 
   inline bool IsInitialized() { return m_isInitialized; }
@@ -183,6 +188,8 @@ public:
     Assert(IsInitialized());
     return &m_pipelineInstance;
   }
+
+  inline void SetPrimitiveCapacity(i32 count) { Assert(!m_queued); m_maxPrimitive = count; }
 
   void Initialize(
     VertexData *renderData,
@@ -199,11 +206,6 @@ public:
     u32 a5,
     void *a6);
 
-  void AllocVertexSparse(
-    bool useChunks,
-    Heap *heap,
-    u32 maxChunkCount);
-
   void Queue();
 
 protected:
@@ -215,6 +217,7 @@ protected:
   u08 unk_2[84] = {0};
   i32 m_renderPipeline = 0;
   PipelineInstance m_pipelineInstance = {};
+  // Index of currently active index buffer.
   u32 m_indexIdx = 0;
   i32 m_maxPrimitive = 0;
   i32 m_maxInstance = 0;
@@ -228,10 +231,37 @@ protected:
   bool unk_6 = false;
   bool m_isInitialized = false;
   u08 unk_7[10] = {0};
+};
+
+class VertexRenderSparse: public VertexRender {
+private:
+  VertexRenderSparse(const VertexRenderSparse &) = default;
+  VertexRenderSparse(VertexRenderSparse &&) = default;
+  VertexRenderSparse &operator=(const VertexRenderSparse &) = default;
+
+private:
+  struct Chunk {
+    u32 idxOffset = 0;
+    u32 idxCount = 0;
+    u32 vtxOffset = 0;
+    u32 vtxCount = 0;
+    u32 unk_1 = 0;
+  };
+
+public:
+  VertexRenderSparse() = default;
+  ~VertexRenderSparse() = default;
+
+  void AllocVertexSparse(
+    bool useChunks,
+    Heap *heap,
+    u32 maxChunkCount);
+
+protected:
   Heap *m_heap = nullptr;
-  void *m_chunkData = nullptr;
+  VertexRenderSparse::Chunk *m_chunkData = nullptr;
   u16 m_chunkCount = 0;
-  u16 m_maxChunkCount = 0;
+  u16 m_chunkCapacity = 0;
   u08 unk_9[12] = {0};
 };
 

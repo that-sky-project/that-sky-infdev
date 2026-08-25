@@ -171,18 +171,18 @@ void VertexRender::Initialize(
     this, renderData, resources, resourceName, renderList, a5, a6);sizeof(VertexRender);
 }
 
-void VertexRender::AllocVertexSparse(
-  bool a2,
-  Heap *heap,
-  u32 a4
-) {
-  using PFN = void (*)(VertexRender *, bool, Heap *, u32);
-  static const Rva s_VertexRender_AllocVertexSparse = 0x001014D0;
-  ((PFN)s_VertexRender_AllocVertexSparse())(this, a2, heap, a4);
-}
-
 void VertexRender::Queue() {
   using PFN = void (*)(VertexRender *);
   static const Rva s_VertexRender_Queue = 0x001002A0;
   ((PFN)s_VertexRender_Queue())(this);
+}
+
+void VertexRenderSparse::AllocVertexSparse(
+  bool a2,
+  Heap *heap,
+  u32 a4
+) {
+  using PFN = void (*)(VertexRenderSparse *, bool, Heap *, u32);
+  static const Rva s_VertexRender_AllocVertexSparse = 0x001014D0;
+  ((PFN)s_VertexRender_AllocVertexSparse())(this, a2, heap, a4);
 }
