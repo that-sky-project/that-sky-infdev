@@ -105,7 +105,8 @@ public:
 
   inline VertexData::IndexBuffer &GetIndexBuffer(u32 idx) { Assert(idx < kMaxIndexBuffers); return m_idxBuffers[idx]; }
   inline GpuBuffer &GetVertexBuffer(u32 idx) { Assert(idx < kMaxVertexBuffers); return m_vtxBuffers[idx]; }
-  inline u32 GetIndexCapacity(u32 idx) { Assert(idx < kMaxIndexBuffers); return m_idxBuffers[idx].capacity; }
+  inline u32 GetIndexCapacity(u32 idx) const { Assert(idx < kMaxIndexBuffers); return m_idxBuffers[idx].capacity; }
+  inline void SetInstanceCapacity(u32 capacity) { m_instanceCapacity = capacity; }
 
   u32 GetTotalSize();
 
@@ -141,9 +142,9 @@ private:
   // Attributes appended.
   u32 m_attributeCount = 0;
   // Element count for per-vertex buffers.
-  u32 m_maxVertices = 0;
+  u32 m_vertexCapacity = 0;
   // Element count for per-instance buffers.
-  u32 m_maxInstances = 0;
+  u32 m_instanceCapacity = 0;
   // Vertex buffers.
   GpuBuffer m_vtxBuffers[kMaxVertexBuffers];
   // TODO:

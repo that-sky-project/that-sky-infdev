@@ -37,7 +37,7 @@ void VertexData::Release() {
     it.Reset();
 
   m_attributeCount = 0;
-  m_maxInstances = 0;
+  m_instanceCapacity = 0;
   m_active = nullptr;
   m_complete = false;
 }
@@ -47,7 +47,7 @@ void VertexData::BeginDefinition(
   u32 maxVertices
 ) {
   AssertMsg(m_complete == false, "VertexData must be Release()'d before it can be redefined");
-  m_maxVertices = maxVertices;
+  m_vertexCapacity = maxVertices;
   m_name = GetRenderer()->GetImmutableString(name);
 }
 
@@ -89,7 +89,7 @@ void VertexData::AddVertexBuffer(
   m_bufferInfo[idx].perInstance = (u16)perInstance;
 
   // The buffer holds one element per vertex, or per instance when flagged.
-  u32 count = perInstance ? m_maxInstances : m_maxVertices;
+  u32 count = perInstance ? m_instanceCapacity : m_vertexCapacity;
 
   char buffer[64] = {0};
   snprintf(buffer, sizeof(buffer), "%s_%u", m_name, idx);
