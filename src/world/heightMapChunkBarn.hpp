@@ -1,0 +1,114 @@
+#ifndef __WORLD_HEIGHTMAPCHUNKBARN_HPP__
+#define __WORLD_HEIGHTMAPCHUNKBARN_HPP__
+
+#include <unordered_set>
+#include <shared_mutex>
+#include <cstring>
+#include <vector>
+#include <Utils/Types.h>
+#include <Base/Meta.hpp>
+#include "mc/posTypes.hpp"
+#include "mod/moduleBarnExt.hpp"
+#include "sky/skyGame.hpp"
+#include "sky/skyVertex.hpp"
+#include "sky/skyTypePlaceholders.hpp"
+#include "world/synth/perlinNoise.hpp"
+
+// ----------------------------------------------------------------------------
+// [SECTION] HeightMapChunk
+// ----------------------------------------------------------------------------
+
+class HeightMapChunk {
+public:
+  HeightMapChunk() = default;
+  ~HeightMapChunk() = default;
+
+  inline void Initialize(const ChunkPos &pos) { m_pos = pos; }
+  inline void Terminate() { }
+
+  inline const ChunkPos &GetPos() const { return m_pos; }
+  inline const f32 *GetHeights() const { return (const f32 *)m_heights; }
+  inline void SetHeights(const f32 *heights) { std::memcpy(m_heights, heights, sizeof(m_heights)); }
+
+private:
+  ChunkPos m_pos = {};
+  f32 m_heights[17][17] = {0};
+};
+
+// ----------------------------------------------------------------------------
+// [SECTION] HeightMapChunkSource
+// ----------------------------------------------------------------------------
+
+class HeightMapChunkSource {
+public:
+  HeightMapChunkSource(): m_noise(new PerlinNoise()) { }
+  ~HeightMapChunkSource() { delete m_noise; }
+
+  void Initialize(i32 seed);
+  void Terminate();
+
+  void LoadChunk(HeightMapChunk *chunk);
+
+private:
+  i32 m_seed = 0;
+  PerlinNoise *m_noise = nullptr;
+};
+
+// ----------------------------------------------------------------------------
+// [SECTION] HeightMapChunkBarn
+// ----------------------------------------------------------------------------
+
+class HeightMapChunkBarn;
+META_DECLARE_CLASS(HeightMapChunkBarn)
+
+class HeightMapChunkBarn: public Module {
+private:
+  struct HeightMapRenderChunk {
+
+  };
+
+private:
+  static void ms_ChunkUpdateThread(HeightMapChunkBarn *heightMapChunkBarn);
+
+public:
+  HeightMapChunkBarn(): m_chunkSource(new HeightMapChunkSource()) { }
+  ~HeightMapChunkBarn() { delete m_chunkSource; }
+
+  void Initialize();
+  void Terminate();
+  void OnLevelLoad(
+    ResourceManager *resources,
+    Scene *scene,
+    cstring levelName);
+  void OnLevelUnload(
+    cstring levelName);
+  void Update(
+    Game *game,
+    AvatarBarn *avatarBarn);
+  void BuildScene();
+
+private:
+  bool m_IsChunkQueued(const ChunkPos &pos);
+  void m_QueueChunk(const ChunkPos &pos);
+  void m_DequeueChunk(const ChunkPos &pos);
+
+  bool m_IsChunkLoaded(const ChunkPos &pos);
+  void m_LoadChunk(const HeightMapChunk *chunk);
+  void m_UnloadChunk(const ChunkPos &pos);
+
+private:
+  std::shared_mutex m_lock = {};
+  std::thread m_chunkUpdateThread = {};
+  bool m_running = false;
+  i32 m_seed = 1196250184;
+  u32 m_viewDistance = 4;
+  HeightMapChunkSource *m_chunkSource = nullptr;
+
+  std::unordered_set<ChunkPos> m_queuedChunks = {};
+  std::unordered_map<ChunkPos, const HeightMapChunk *> m_loadedChunks = {};
+
+  VertexRender m_vertexRender = {};
+  VertexData m_vertexData = {};
+};
+
+#endif
