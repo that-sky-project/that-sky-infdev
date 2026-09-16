@@ -2,6 +2,7 @@
 #define __WORLD_SYNTH_PERLINNOISE_HPP__
 
 #include <Utils/Types.h>
+#include "sky/skyPrivate.hpp"
 #include "world/synth/synth.hpp"
 #include "world/synth/random.hpp"
 #include "world/synth/improvedNoise.hpp"
@@ -10,32 +11,33 @@
 // Edition codebase leakage (net.minecraft.world.level.levelgen.synth.PerlinNoise).
 class PerlinNoise: public Synth {
 public:
-  PerlinNoise(i32 levels) {
-    m_rndPtr = &m_random;
-    Initialize(levels);
-  }
+  PerlinNoise() = default;
+  ~PerlinNoise() = default;
 
-  PerlinNoise(Random *random, i32 levels) {
-    m_rndPtr = random;
-    Initialize(levels);
-  }
+  inline void Initialize(
+    Random *random,
+    i32 levels
+  ) {
+    Assert(!m_initialized);
 
-  ~PerlinNoise() {
-    Terminate();
-  }
-
-  inline void Initialize(i32 levels) {
     m_levels = levels;
     m_noiseLevels = new ImprovedNoise *[levels];
     for (i32 i = 0; i < levels; i++) {
-      m_noiseLevels[i] = new ImprovedNoise(m_rndPtr);
+      m_noiseLevels[i] = new ImprovedNoise();
+      m_noiseLevels[i]->Initialize(random);
     }
+
+    m_initialized = true;
   }
 
   inline void Terminate() {
+    Assert(m_initialized);
+
     for (i32 i = 0; i < m_levels; ++i)
       delete m_noiseLevels[i];
     delete[] m_noiseLevels;
+
+    m_initialized = false;
   }
 
   inline virtual f32 GetValue(
@@ -100,8 +102,7 @@ public:
     i32 xSize,
     i32 zSize,
     f32 xScale,
-    f32 zScale,
-    f32 pow
+    f32 zScale
   ) {
     return GetRegion(sr, (f32)x, 10.0f, (f32)z, xSize, 1, zSize, xScale, 1, zScale);
   }
@@ -114,6 +115,7 @@ public:
   }
 
 private:
+  bool m_initialized = false;
   ImprovedNoise **m_noiseLevels = nullptr;
   i32 m_levels = 0;
 

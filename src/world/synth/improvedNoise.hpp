@@ -9,14 +9,8 @@
 // leakage (net.minecraft.world.level.levelgen.synth.ImprovedNoise).
 class ImprovedNoise: public Synth {
 public:
-  ImprovedNoise() {
-    Random random(1);
-    Initialize(&random);
-  }
-
-  ImprovedNoise(Random *random) {
-    Initialize(random);
-  }
+  ImprovedNoise() = default;
+  ~ImprovedNoise() = default;
 
   inline void Initialize(Random *random) {
     xo = random->NextFloat() * 256.0f;

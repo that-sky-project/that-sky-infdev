@@ -6,7 +6,6 @@
 #include "sky/skyVertex.hpp"
 #include "sky/skyScene.hpp"
 #include "sky/skyMaterialDefBarn.hpp"
-#include "render/terrainRender.hpp"
 
 class RenderTest {
 public:
