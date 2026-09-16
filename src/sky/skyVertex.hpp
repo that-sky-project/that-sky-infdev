@@ -114,7 +114,7 @@ public:
 
   void BeginDefinition(
     cstring name,
-    u32 maxIndices);
+    u32 maxVertices);
 
   void EndDefinition();
 
@@ -206,7 +206,10 @@ public:
     u32 a5,
     void *a6);
 
+  void Release();
+
   void Queue();
+  void Dequeue();
 
 protected:
   VertexData *m_vertexData = nullptr;
