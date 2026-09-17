@@ -13,10 +13,10 @@ struct R8G8B8A8_SNORM {
     f32 z,
     f32 w
   )
-    : x(255 * (x + 1) / 2)
-    , y(255 * (y + 1) / 2)
-    , z(255 * (z + 1) / 2)
-    , w(255 * (w + 1) / 2)
+    : x((i08)(255.0f * (x + 1.0f) / 2.0f))
+    , y((i08)(255.0f * (y + 1.0f) / 2.0f))
+    , z((i08)(255.0f * (z + 1.0f) / 2.0f))
+    , w((i08)(255.0f * (w + 1.0f) / 2.0f))
   { }
 
   i08 x;
@@ -34,10 +34,10 @@ struct R8G8B8A8_UNORM {
     f32 z,
     f32 w
   )
-    : x(255 * x)
-    , y(255 * y)
-    , z(255 * z)
-    , w(255 * w)
+    : x((i08)(255.0f * x))
+    , y((i08)(255.0f * y))
+    , z((i08)(255.0f * z))
+    , w((i08)(255.0f * w))
   { }
 
   u08 x;
@@ -69,6 +69,32 @@ struct GrassShVertex {
   u32 a_light0 = 0x7F7F7F7F;
   u32 a_light1 = 0x0000FFB3;
   u32 a_light2 = 0xFF80FF80;
+};
+
+struct GrassShMeshVertex {
+  static constexpr u32 kNumAttrs = 6;
+  static constexpr GfxType kTypes[kNumAttrs] = {kGfxType_FLOAT3, kGfxType_BYTE4, kGfxType_UBYTE4, kGfxType_UBYTE4, kGfxType_UBYTE4, kGfxType_UBYTE4};
+  static constexpr GfxAttr kAttrs[kNumAttrs] = {kGfxAttr_Position, kGfxAttr_Normal, kGfxAttr_Light0, kGfxAttr_Light1, kGfxAttr_Light2, kGfxAttr_Color};
+
+  ~GrassShMeshVertex() = default;
+  GrassShMeshVertex() = default;
+
+  GrassShMeshVertex(
+    f32 x,
+    f32 y,
+    f32 z
+  ) {
+    a_position[0] = x;
+    a_position[1] = y;
+    a_position[2] = z;
+  }
+
+  f32 a_position[3] = {0};
+  u32 a_normal = 0x000000FF;
+  u32 a_light0 = 0x7F7F7F7F;
+  u32 a_light1 = 0x0000FFB3;
+  u32 a_light2 = 0xFF80FF80;
+  u32 a_color  = 0xFFFFFFFF;
 };
 
 struct TerrainDepthVertex {

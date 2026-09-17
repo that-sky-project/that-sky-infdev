@@ -57,7 +57,7 @@ void Override::m_OverrideMetaSystem(
   // Resolve sizeof(MetaSystem).
   const MetaClass *pmcMetaSystem = itMetaSystem->second;
   size_t sizeMetaSystem = pmcMetaSystem->SizeOfObject();
-  u32 classCount = (sizeMetaSystem - sizeof(FakeMetaSystem)) / sizeof(const MetaClass *);
+  u32 classCount = (u32)((sizeMetaSystem - sizeof(FakeMetaSystem)) / sizeof(const MetaClass *));
 
   // Find MetaClassImpl<Game>.
   const auto &itGame = classes.find("Game");
