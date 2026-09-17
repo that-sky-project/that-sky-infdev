@@ -19,6 +19,9 @@ struct R8G8B8A8_SNORM {
     , w((i08)(255.0f * (w + 1.0f) / 2.0f))
   { }
 
+  inline operator u32() { return ((u32)(u08)x) | (((u32)(u08)y) << 8) | (((u32)(u08)z) << 16) | (((u32)(u08)w) << 24); }
+  inline operator i32() { return (i32)(operator u32()); }
+
   i08 x;
   i08 y;
   i08 z;
@@ -39,6 +42,9 @@ struct R8G8B8A8_UNORM {
     , z((i08)(255.0f * z))
     , w((i08)(255.0f * w))
   { }
+
+  inline operator u32() { return ((u32)x) | (((u32)y) << 8) | (((u32)z) << 16) | (((u32)w) << 24); }
+  inline operator i32() { return (i32)(operator u32()); }
 
   u08 x;
   u08 y;
