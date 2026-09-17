@@ -263,16 +263,25 @@ public:
   VertexRenderSparse() = default;
   ~VertexRenderSparse() = default;
 
+  // Mark the vertex render object as indirect draw.
+  //
+  // NOTE: The function may called AllocateChunks().
   void AllocVertexSparse(
     bool useChunks,
     Heap *heap,
     u32 maxChunkCount);
 
+  // A render chunk represents an indirect subcommand. useChunks must be set
+  // with AllocVertexSparse() before use this function.
+  //
+  // When useChunks == true, the VertexRender(Sparse) will lead to a
+  // vkCmdDrawIndexedIndirect() call instead of a vkCmdDrawIndexed() call.
   void AddRenderChunk(
     u32 idxOffset,
     u32 idxCount,
     i32 vtxOffset);
 
+  // Clear all cached subcommands.
   void ClearRenderChunk();
 
 protected:
