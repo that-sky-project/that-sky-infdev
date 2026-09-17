@@ -159,6 +159,10 @@ private:
   const char *m_name = "";
 };
 
+// NOTE: For unknown reasons, Sky's disassembly blurs the boundary between the
+//       `VertexRender` and `VertexRenderSparse` objects, for example in the
+//       `GetRenderablePrimitiveCount` function. Therefore, it is recommended to use
+//       `VertexRenderSparse` in all rendering-related content for maximum compatibility.
 class VertexRender {
 private:
   VertexRender(const VertexRender &) = default;
@@ -243,12 +247,16 @@ private:
   VertexRenderSparse &operator=(const VertexRenderSparse &) = default;
 
 private:
+  // Indirect sub-command.
   struct Chunk {
+    Chunk(u32 idxOffset, u32 idxCount, i32 vtxOffset)
+      : idxOffset(idxOffset), idxCount(idxCount), vtxOffset(vtxOffset) { }
+
     u32 idxOffset = 0;
     u32 idxCount = 0;
-    u32 vtxOffset = 0;
-    u32 vtxCount = 0;
-    u32 unk_1 = 0;
+    i32 vtxOffset = 0;
+    u32 instanceCount = 1;
+    u32 firstInstance = 0;
   };
 
 public:
@@ -259,6 +267,13 @@ public:
     bool useChunks,
     Heap *heap,
     u32 maxChunkCount);
+
+  void AddRenderChunk(
+    u32 idxOffset,
+    u32 idxCount,
+    i32 vtxOffset);
+
+  void ClearRenderChunk();
 
 protected:
   Heap *m_heap = nullptr;

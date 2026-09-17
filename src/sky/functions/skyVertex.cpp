@@ -198,3 +198,20 @@ void VertexRenderSparse::AllocVertexSparse(
   static const Rva s_VertexRender_AllocVertexSparse = 0x001014D0;
   ((PFN)s_VertexRender_AllocVertexSparse())(this, a2, heap, a4);
 }
+
+void VertexRenderSparse::AddRenderChunk(
+  u32 idxOffset,
+  u32 idxCount,
+  i32 vtxOffset
+) {
+  if (m_useChunk && idxCount) {
+    if (m_chunkCount < m_chunkCapacity) {
+      m_chunkData[m_chunkCount] = VertexRenderSparse::Chunk(idxOffset, idxCount, vtxOffset);
+      m_chunkCount++;
+    }
+  }
+}
+
+void VertexRenderSparse::ClearRenderChunk() {
+  m_chunkCount = 0;
+}
