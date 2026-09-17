@@ -177,6 +177,18 @@ void VertexRender::Queue() {
   ((PFN)s_VertexRender_Queue())(this);
 }
 
+void VertexRender::Dequeue() {
+  using PFN = void (*)(VertexRender *);
+  static const Rva s_VertexRender_Dequeue = 0x00100940;
+  ((PFN)s_VertexRender_Dequeue())(this);
+}
+
+void VertexRender::Release() {
+  using PFN = void (*)(VertexRender *);
+  static const Rva s_VertexRender_Release = 0x00100060;
+  ((PFN)s_VertexRender_Release())(this);
+}
+
 void VertexRenderSparse::AllocVertexSparse(
   bool a2,
   Heap *heap,

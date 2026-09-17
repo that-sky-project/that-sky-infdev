@@ -1,8 +1,11 @@
 #include <chrono>
 #include <thread>
 #include <cstring>
+#include <cmath>
+#include <includes/htmodloader.h>
 #include "sky/skyGfx.hpp"
 #include "sky/skyScene.hpp"
+#include "sky/skyMaterialDefBarn.hpp"
 #include "sky/skyTypePlaceholders.hpp"
 #include "render/vertexArrayElements.hpp"
 #include "world/heightMapChunkBarn.hpp"
@@ -32,8 +35,46 @@ void HeightMapChunkSource::LoadChunk(
     chunk->GetPos().x,
     chunk->GetPos().z,
     17, 17,
-    1368.824, 1368.824);
+    1368.824f, 1368.824f);
+  for (u32 z = 0; z < 17; z++) {
+    for (u32 x = 0; x < 17; x++) {
+      heights[x][z] *= 1e-4f;
+    }
+  }
   chunk->SetHeights((f32 *)heights);
+}
+
+// ----------------------------------------------------------------------------
+// [SECTION] HeightMapChunkBarn::RenderData
+// ----------------------------------------------------------------------------
+
+void HeightMapChunkBarn::RenderData::Initialize(
+  cstring tag,
+  const GfxType *types,
+  const GfxAttr *attrs,
+  u32 attrCount,
+  ResourceManager *resources,
+  cstring shader,
+  RenderList *renderList
+) {
+  data.BeginDefinition("Infdev_TerrainGrass", 17 * 17 * 169);
+  data.AddVertexBuffer(0, types, attrs, attrCount, kGfxBind_UploadTriple, 0, nullptr);
+  data.AddIndexBuffer(
+    0,
+    kGfxType_UINT,
+    kGfxBind_UploadTriple,
+    3 * 2 * 16 * 16 * 169,
+    nullptr);
+  data.EndDefinition();
+
+  render.Initialize(&data, resources, shader, renderList, 0, nullptr);
+  render.SetPrimitiveCapacity(0);
+}
+
+void HeightMapChunkBarn::RenderData::Terminate() {
+  render.Dequeue();
+  render.Release();
+  data.Release();
 }
 
 // ----------------------------------------------------------------------------
@@ -101,62 +142,61 @@ META_DATA_MEMBER_FUNCTION(HeightMapChunkBarn, OnLevelLoad, ArgName, "(levelName)
 void HeightMapChunkBarn::OnLevelLoad(
   ResourceManager *resources,
   Scene *scene,
+  MaterialDefBarn *materialDefBarn,
   cstring levelName
 ) {
-  if (strcmp(levelName, "Infdev_TestLevel"))
+  if (strcmp(levelName, kTestInfdevLevel))
     return;
-  // Initialize renderer.
 
-  // 17 * 17 vertices per chunk.
-  m_vertexData.BeginDefinition("Infdev", 17 * 17 * 169);
-  m_vertexData.AddVertexBuffer(
-    0,
+  // Initialize renderer.
+  m_depth.Initialize(
+    "Infdev_DEPTH",
+    TerrainDepthVertex::kTypes,
+    TerrainDepthVertex::kAttrs,
+    TerrainDepthVertex::kNumAttrs,
+    resources,
+    "TerrainDepth",
+    scene->GetRenderListByName("TerrainDepth")
+  );
+  m_mats.Initialize(
+    "Infdev_GRASSSH",
     GrassShVertex::kTypes,
     GrassShVertex::kAttrs,
     GrassShVertex::kNumAttrs,
-    kGfxBind_UploadTriple,
-    0,
-    nullptr);
-  m_vertexData.AddIndexBuffer(
-    0,
-    kGfxType_UINT,
-    kGfxBind_UploadTriple,
-    3 * 2 * 16 * 16 * 169,
-    0);
-  m_vertexData.EndDefinition();
-
-  RenderList *rl = scene->GetRenderListByName("Opaque");
-  m_vertexRender.Initialize(
-    &m_vertexData,
     resources,
     "GrassSh",
-    rl,
-    0,
-    nullptr);
+    scene->GetRenderListByName("TerrainMats")
+  );
 
-  m_vertexRender.SetPrimitiveCapacity(0);
+  MaterialDefBarn::SetMaterialShaderUniforms(
+    m_mats.render.GetPipelineInstance(),
+    materialDefBarn->GetDef(kMaterial_Grass),
+    resources);
 }
 
 META_REGISTER_FUNCTION_MEMBER(HeightMapChunkBarn, OnLevelUnload)
-META_DATA_MEMBER_FUNCTION(HeightMapChunkBarn, OnLevelLoad, ArgName, "(levelName)")
+META_DATA_MEMBER_FUNCTION(HeightMapChunkBarn, OnLevelUnload, ArgName, "(levelName)")
 void HeightMapChunkBarn::OnLevelUnload(
   cstring levelName
 ) {
-  if (strcmp(levelName, "Infdev_TestLevel"))
+  if (strcmp(levelName, kTestInfdevLevel))
     return;
 
   // Deinitialize renderer.
-  m_vertexRender.Dequeue();
-  m_vertexRender.Release();
-
-  m_vertexData.Release();
+  m_depth.Terminate();
+  m_mats.Terminate();
 }
 
 META_REGISTER_FUNCTION_MEMBER(HeightMapChunkBarn, Update)
+META_DATA_MEMBER_FUNCTION(HeightMapChunkBarn, Update, ArgName, "(levelName)")
 void HeightMapChunkBarn::Update(
   Game *game,
-  AvatarBarn *avatarBarn
+  AvatarBarn *avatarBarn,
+  cstring levelName
 ) {
+  if (strcmp(levelName, kTestInfdevLevel))
+    return;
+
   ChunkPos avatarChunkPos = {0, 0};
 
   i32 viewDist = (i32)m_viewDistance;
@@ -195,11 +235,280 @@ void HeightMapChunkBarn::Update(
 }
 
 META_REGISTER_FUNCTION_MEMBER(HeightMapChunkBarn, BuildScene)
-void HeightMapChunkBarn::BuildScene() {
+META_DATA_MEMBER_FUNCTION(HeightMapChunkBarn, BuildScene, ArgName, "(levelName)")
+void HeightMapChunkBarn::BuildScene(
+  cstring levelName
+) {
+  if (strcmp(levelName, kTestInfdevLevel))
+    return;
+
   std::shared_lock<std::shared_mutex> lock(m_lock);
 
-  // TODO: Implement scene building logic
-  // This will iterate through m_loadedChunks and build rendering data
+  // Count total primitives needed.
+  u32 totalChunks = 0;
+  for (const auto &pair: m_loadedChunks) {
+    const ChunkPos &pos = pair.first;
+    auto it = m_renderChunks.find(pos);
+    if (it == m_renderChunks.end() || it->second.isDirty) {
+      totalChunks++;
+    }
+  }
+
+  //if (totalChunks == 0)
+  //  return;
+
+  HTTellText("RENDER TRIGGER");
+
+  AssertMsg(totalChunks <= 169, "Too many chunks loaded! Decrease m_viewDistance.");
+
+  // Map vertex and index buffers.
+  TerrainDepthVertex *depthVtx = (TerrainDepthVertex *)m_depth.MapVtxBuffer();
+  GrassShVertex *grassVtx = (GrassShVertex *)m_mats.MapVtxBuffer();
+  u32 *depthIdx = (u32 *)m_depth.MapIdxBuffer();
+  u32 *grassIdx = (u32 *)m_mats.MapIdxBuffer();
+
+  // Return if failed to map buffers.
+  if (!grassVtx || !grassIdx || !depthVtx || !depthIdx) {
+    if (grassVtx) m_mats.UnmapVtxBuffer();
+    if (grassIdx) m_mats.UnmapIdxBuffer();
+    if (depthVtx) m_depth.UnmapVtxBuffer();
+    if (depthIdx) m_depth.UnmapIdxBuffer();
+    return;
+  }
+
+  /*u32 currentVtxOffset = 0;
+  u32 currentIdxOffset = 0;
+  u32 processedChunks = 0;
+
+  // Process each loaded chunk.
+  for (const auto &pair: m_loadedChunks) {
+    const ChunkPos &chunkPos = pair.first;
+    const HeightMapChunk *chunk = pair.second;
+
+    // Check if chunk needs update.
+    auto renderIt = m_renderChunks.find(chunkPos);
+    bool needsUpdate = (renderIt == m_renderChunks.end() || renderIt->second.isDirty);
+
+    //if (!needsUpdate)
+    //  continue;
+
+    // Each chunk: 17x17 vertices, 16x16 quads = 32x16 triangles.
+    const u32 kChunkVtxCount = 17 * 17;
+    const u32 kChunkIdxCount = 16 * 16 * 6;
+
+    // Get height data.
+    const f32 *heights = chunk->GetHeights();
+
+    // Generate vertices with positions and normals.
+    for (u32 z = 0; z < 17; ++z) {
+      for (u32 x = 0; x < 17; ++x) {
+        u32 idx = z * 17 + x;
+        f32 height = heights[idx];
+
+        HTTellText(
+          "HEIGHT (%d, %d) (%d, %d) : %f",
+          pair.second->GetPos().x,
+          pair.second->GetPos().z,
+          x,
+          z,
+          height);
+
+        // World position.
+        f32 worldX = chunkPos.x * 16.0f + x;
+        f32 worldZ = chunkPos.z * 16.0f + z;
+
+        GrassShVertex &vtx = grassVtx[currentVtxOffset + idx];
+        vtx.a_position[0] = worldX;
+        vtx.a_position[1] = height;
+        vtx.a_position[2] = worldZ;
+
+        // Calculate normal using neighboring heights.
+        f32 hL = (x > 0)  ? heights[z * 17 + (x - 1)] : height;
+        f32 hR = (x < 16) ? heights[z * 17 + (x + 1)] : height;
+        f32 hD = (z > 0)  ? heights[(z - 1) * 17 + x] : height;
+        f32 hU = (z < 16) ? heights[(z + 1) * 17 + x] : height;
+
+        // Tangent vectors.
+        f32 tx = 2.0f, ty = hR - hL, tz = 0.0f;
+        f32 bx = 0.0f, by = hU - hD, bz = 2.0f;
+
+        // Cross product for normal.
+        f32 nx = ty * bz - tz * by;
+        f32 ny = tz * bx - tx * bz;
+        f32 nz = tx * by - ty * bx;
+
+        // Normalize.
+        f32 len = sqrtf(nx * nx + ny * ny + nz * nz);
+        if (len > 0.0f) {
+          nx /= len;
+          ny /= len;
+          nz /= len;
+        } else {
+          nx = 0.0f;
+          ny = 1.0f;
+          nz = 0.0f;
+        }
+
+        // Pack normal into BYTE4 format (range -1..1 -> -127..127).
+        i08 nnx = (i08)(nx * 127.0f);
+        i08 nny = (i08)(ny * 127.0f);
+        i08 nnz = (i08)(nz * 127.0f);
+        i08 nnw = 0;
+
+        vtx.a_normal = ((u32)(u08)nnx) | (((u32)(u08)nny) << 8) | (((u32)(u08)nnz) << 16) | (((u32)(u08)nnw) << 24);
+
+        // Keep default light values.
+      }
+    }
+
+    // Generate indices (two triangles per quad).
+    for (u32 z = 0; z < 16; ++z) {
+      for (u32 x = 0; x < 16; ++x) {
+        u32 quadIdx = z * 16 + x;
+        u32 baseIdx = currentIdxOffset + quadIdx * 6;
+
+        u32 v0 = currentVtxOffset + z * 17 + x;
+        u32 v1 = v0 + 1;
+        u32 v2 = v0 + 17;
+        u32 v3 = v2 + 1;
+
+        // Triangle 1: v0, v2, v1
+        grassIdx[baseIdx + 0] = v0;
+        grassIdx[baseIdx + 1] = v2;
+        grassIdx[baseIdx + 2] = v1;
+
+        // Triangle 2: v1, v2, v3
+        grassIdx[baseIdx + 3] = v1;
+        grassIdx[baseIdx + 4] = v2;
+        grassIdx[baseIdx + 5] = v3;
+      }
+    }
+
+    // Update render chunk state.
+    RenderChunk renderChunk;
+    renderChunk.pos = chunkPos;
+    renderChunk.vtxOffset = currentVtxOffset;
+    renderChunk.idxOffset = currentIdxOffset;
+    renderChunk.isDirty = false;
+    m_renderChunks[chunkPos] = renderChunk;
+
+    currentVtxOffset += kChunkVtxCount;
+    currentIdxOffset += kChunkIdxCount;
+    processedChunks++;
+  }
+  */
+
+  u32 currentVtxOffset = 0
+    , currentIdxOffset = 0
+    , processedChunks = 0;
+  for (const auto &pair: m_loadedChunks) {
+    const ChunkPos &chunkPos = pair.first;
+    const HeightMapChunk *chunk = pair.second;
+    // Get height data.
+    const f32 *heights = chunk->GetHeights();
+
+    // Generate vertices with positions and normals.
+    for (u32 z = 0; z < 17; ++z) {
+      for (u32 x = 0; x < 17; ++x) {
+        u32 idx = z * 17 + x;
+        f32 height = heights[idx];
+
+        // World position.
+        f32 worldX = chunkPos.x * 16.0f + x;
+        f32 worldZ = chunkPos.z * 16.0f + z;
+
+        GrassShVertex vtx = {worldX, height, worldZ};
+        TerrainDepthVertex vtx2 = {worldX, height, worldZ};
+
+        // Calculate normal using neighboring heights.
+        f32 hL = (x > 0)  ? heights[z * 17 + (x - 1)] : height;
+        f32 hR = (x < 16) ? heights[z * 17 + (x + 1)] : height;
+        f32 hD = (z > 0)  ? heights[(z - 1) * 17 + x] : height;
+        f32 hU = (z < 16) ? heights[(z + 1) * 17 + x] : height;
+
+        // Tangent vectors.
+        f32 tx = 2.0f, ty = hR - hL, tz = 0.0f;
+        f32 bx = 0.0f, by = hU - hD, bz = 2.0f;
+
+        // Cross product for normal.
+        f32 nx = ty * bz - tz * by;
+        f32 ny = tz * bx - tx * bz;
+        f32 nz = tx * by - ty * bx;
+
+        // Normalize.
+        f32 len = sqrtf(nx * nx + ny * ny + nz * nz);
+        if (len > 0.0f) {
+          nx /= len;
+          ny /= len;
+          nz /= len;
+        } else {
+          nx = 0.0f;
+          ny = 1.0f;
+          nz = 0.0f;
+        }
+
+        // Pack normal into BYTE4 format (range -1..1 -> -127..127).
+        // a_normal.w is used as the weight of the material.
+        vtx.a_normal = (i32)R8G8B8A8_SNORM(nx, ny, nz, 1.0f);
+
+        // Keep default light values.
+        vtx.a_light0 = 0x7F7F7F7F;
+        vtx.a_light1 = 0x0000FFB3;
+        vtx.a_light2 = 0xFF80FF80;
+        grassVtx[currentVtxOffset + idx] = vtx;
+        depthVtx[currentVtxOffset + idx] = vtx2;
+      }
+    }
+
+    // Generate indices (two triangles per quad).
+    for (u32 z = 0; z < 16; ++z) {
+      for (u32 x = 0; x < 16; ++x) {
+        u32 quadIdx = z * 16 + x;
+        u32 baseIdx = currentIdxOffset + quadIdx * 6;
+
+        u32 v0 = currentVtxOffset + z * 17 + x;
+        u32 v1 = v0 + 1;
+        u32 v2 = v0 + 17;
+        u32 v3 = v2 + 1;
+
+        // Triangle 1: v0, v2, v1
+        grassIdx[baseIdx + 0] = v0;
+        grassIdx[baseIdx + 1] = v2;
+        grassIdx[baseIdx + 2] = v1;
+        depthIdx[baseIdx + 0] = v0;
+        depthIdx[baseIdx + 1] = v2;
+        depthIdx[baseIdx + 2] = v1;
+
+        // Triangle 2: v1, v2, v3
+        grassIdx[baseIdx + 3] = v1;
+        grassIdx[baseIdx + 4] = v2;
+        grassIdx[baseIdx + 5] = v3;
+        depthIdx[baseIdx + 3] = v1;
+        depthIdx[baseIdx + 4] = v2;
+        depthIdx[baseIdx + 5] = v3;
+      }
+    }
+
+    currentVtxOffset += kChunkVtxCount;
+    currentIdxOffset += kChunkIdxCount;
+    processedChunks++;
+
+    if (processedChunks >= 2)
+      break;
+  }
+
+  // Unmap buffers.
+  m_depth.UnmapVtxBuffer();
+  m_depth.UnmapIdxBuffer();
+  m_mats.UnmapVtxBuffer();
+  m_mats.UnmapIdxBuffer();
+
+  // Set primitive count and queue for rendering.
+  m_depth.SetPrimitiveCount(1536 * 2);
+  m_mats.SetPrimitiveCount(1536 * 2);
+
+  m_depth.Queue();
+  m_mats.Queue();
 }
 
 bool HeightMapChunkBarn::m_IsChunkQueued(
@@ -248,5 +557,9 @@ void HeightMapChunkBarn::m_UnloadChunk(
     return;
   const HeightMapChunk *chunk = it->second;
   m_loadedChunks.erase(it);
+
+  // Remove render chunk context.
+  m_renderChunks.erase(pos);
+
   delete chunk;
 }

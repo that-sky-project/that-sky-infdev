@@ -37,9 +37,15 @@ void Mod::Initialize(
 
   m_renderTest = new RenderTest();
   m_renderTest->Initialize(game);
+
+  m_chunks = new HeightMapChunkBarn();
+  m_chunks->Initialize();
 }
 
 void Mod::Terminate() {
+  m_chunks->Terminate();
+  delete m_chunks;
+
   m_renderTest->Terminate();
   delete m_renderTest;
 
@@ -53,10 +59,21 @@ void Mod::OnLevelLoad(
   cstring levelName
 ) {
   HTTellText("Mod::OnLevelLoad(%s)", levelName);
+  m_chunks->OnLevelLoad(
+    m_game->resolveMember<ResourceManager *>("resources"),
+    m_game->resolveMember<Scene *>("scene"),
+    m_game->resolveMember<MaterialDefBarn *>("materialDefBarn"),
+    m_game->resolveMember<cstring>("levelName")
+  );
 }
 
 void Mod::OnLevelLoadLate() { }
-void Mod::OnLevelUnload() { }
+
+void Mod::OnLevelUnload() {
+  m_chunks->OnLevelUnload(
+    m_game->resolveMember<cstring>("levelName")
+  );
+}
 void Mod::OnLevelUnloadLate() { }
 void Mod::HotLoad() { }
 void Mod::HotUnload() { }
@@ -65,11 +82,22 @@ void Mod::Resize() { }
 void Mod::Update() {
   //HTTellText("Mod::Update(%p)", m_game);
   m_renderTest->Update();
+  m_chunks->Update(
+    m_game,
+    m_game->resolveMember<AvatarBarn *>("avatarBarn"),
+    m_game->resolveMember<cstring>("levelName")
+  );
 }
 
 void Mod::UpdateLate() { }
 void Mod::UpdateBackground() { }
-void Mod::BuildScene() { }
+
+void Mod::BuildScene() {
+  m_chunks->BuildScene(
+    m_game->resolveMember<cstring>("levelName")
+  );
+}
+
 void Mod::RenderFlush() { }
 void Mod::PostRender() { }
 void Mod::OnPause() { }

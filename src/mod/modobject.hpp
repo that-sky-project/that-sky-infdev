@@ -5,6 +5,7 @@
 #include "sky/skyGame.hpp"
 #include "mod/moduleBarnExt.hpp"
 #include "render/renderTest.hpp"
+#include "world/heightMapChunkBarn.hpp"
 
 class Mod;
 META_DECLARE_CLASS(Mod)
@@ -39,6 +40,7 @@ private:
   Game *m_game = nullptr;
   ModuleBarnExt *m_moduleBarnExt = nullptr;
   RenderTest *m_renderTest = nullptr;
+  HeightMapChunkBarn *m_chunks = nullptr;
 };
 
 #endif

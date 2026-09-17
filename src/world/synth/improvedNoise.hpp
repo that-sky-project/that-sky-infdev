@@ -207,11 +207,13 @@ public:
     return x;
   }
 
-  f32 scale;
-  f32 xo, yo, zo;
+  f32 scale = 0.0f;
+  f32 xo = 0.0f;
+  f32 yo = 0.0f;
+  f32 zo = 0.0f;
 
 private:
-  i32 m_p[512];
+  i32 m_p[512] = {0};
 };
 
 #endif

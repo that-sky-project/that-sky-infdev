@@ -63,11 +63,45 @@ META_DECLARE_CLASS(HeightMapChunkBarn)
 
 class HeightMapChunkBarn: public Module {
 private:
-  struct HeightMapRenderChunk {
+  struct RenderData {
+    void Initialize(
+      cstring tag,
+      const GfxType *types,
+      const GfxAttr *attrs,
+      u32 attrCount,
+      ResourceManager *resources,
+      cstring shader,
+      RenderList *renderList);
+    void Terminate();
 
+    inline void SetPrimitiveCount(u32 count) { render.SetPrimitiveCapacity(count); }
+
+    inline void *MapVtxBuffer() { return data.GetVertexBuffer(0).MapBuffer(); }
+    inline void UnmapVtxBuffer() { data.GetVertexBuffer(0).UnmapBuffer(); }
+
+    inline void *MapIdxBuffer() { return data.GetIndexBuffer(0).buffer.MapBuffer(); }
+    inline void UnmapIdxBuffer() {  data.GetIndexBuffer(0).buffer.UnmapBuffer(); }
+
+    inline void Queue() { render.Queue(); }
+    inline void Dequeue() { render.Dequeue(); }
+
+    VertexData data = {};
+    VertexRender render = {};
+  };
+
+  struct RenderChunk {
+    ChunkPos pos = {};
+    u32 vtxOffset = 0;
+    u32 idxOffset = 0;
+    bool isDirty = true;
   };
 
 private:
+  // Each chunk: 17x17 vertices, 16x16 quads = 32x16 triangles.
+  static constexpr u32 kChunkVtxCount = 17 * 17;
+  static constexpr u32 kChunkIdxCount = 16 * 16 * 6;
+  static constexpr cstring kTestInfdevLevel = "CandleSpace";
+
   static void ms_ChunkUpdateThread(HeightMapChunkBarn *heightMapChunkBarn);
 
 public:
@@ -79,13 +113,16 @@ public:
   void OnLevelLoad(
     ResourceManager *resources,
     Scene *scene,
+    MaterialDefBarn *materialDefBarn,
     cstring levelName);
   void OnLevelUnload(
     cstring levelName);
   void Update(
     Game *game,
-    AvatarBarn *avatarBarn);
-  void BuildScene();
+    AvatarBarn *avatarBarn,
+    cstring levelName);
+  void BuildScene(
+    cstring levelName);
 
 private:
   bool m_IsChunkQueued(const ChunkPos &pos);
@@ -106,9 +143,10 @@ private:
 
   std::unordered_set<ChunkPos> m_queuedChunks = {};
   std::unordered_map<ChunkPos, const HeightMapChunk *> m_loadedChunks = {};
+  std::unordered_map<ChunkPos, RenderChunk> m_renderChunks = {};
 
-  VertexRender m_vertexRender = {};
-  VertexData m_vertexData = {};
+  RenderData m_depth = {};
+  RenderData m_mats = {};
 };
 
 #endif

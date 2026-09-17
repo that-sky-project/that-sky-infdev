@@ -109,7 +109,6 @@
     <ClCompile Include="..\..\..\src\mod\moduleBarnExt.cpp" />
     <ClCompile Include="..\..\..\src\mod\scriptEngine\luacall.cpp" />
     <ClCompile Include="..\..\..\src\render\renderTest.cpp" />
-    <ClCompile Include="..\..\..\src\render\terrainRender.cpp" />
     <ClCompile Include="..\..\..\src\sky\functions\skyGame.cpp" />
     <ClCompile Include="..\..\..\src\sky\functions\skyGpuBuffer.cpp" />
     <ClCompile Include="..\..\..\src\sky\functions\skyMaterialDefBarn.cpp" />
@@ -120,6 +119,7 @@
     <ClCompile Include="..\..\..\src\sky\functions\skyScene.cpp" />
     <ClCompile Include="..\..\..\src\sky\functions\skyVertex.cpp" />
     <ClCompile Include="..\..\..\src\utils\htmodloader.cpp" />
+    <ClCompile Include="..\..\..\src\world\heightMapChunkBarn.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
