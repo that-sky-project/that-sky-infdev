@@ -178,7 +178,7 @@ public:
   using Strategy = GfxBind;
 
   ~GpuBuffer() = default;
-  GpuBuffer() = default;
+  GpuBuffer(): m_writeCount(0), m_writeIndex(0), m_readCount(0), m_readIndex(0), m_isMapped(false), m_isSharedWritten(false), m_isCpuCoherent(false) { }
   GpuBuffer(GpuBuffer &&) = delete;
   GpuBuffer(const GpuBuffer &) = delete;
   GpuBuffer &operator=(const GpuBuffer &) = delete;
