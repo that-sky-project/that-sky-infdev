@@ -35,13 +35,14 @@ void HeightMapChunkSource::LoadChunk(
   f32 heights[17][17];
   m_noise->GetRegion(
     (f32 *)heights,
-    chunk->GetPos().x,
-    chunk->GetPos().z,
+    chunk->GetPos().x * 16,
+    chunk->GetPos().z * 16,
     17, 17,
     1368.824f, 1368.824f);
   for (u32 z = 0; z < 17; z++) {
     for (u32 x = 0; x < 17; x++) {
       heights[x][z] *= 1e-4f;
+      heights[x][z] += 2.0f;
     }
   }
   chunk->SetHeights((f32 *)heights);
@@ -69,7 +70,7 @@ void HeightMapChunkBarn::RenderData::Initialize(
     tag_HeightMapChunk,
     alignof(u16));
 
-  // Vertices and indices:
+  // Vertices and indices (x-major order):
   //       (x)      (x+1)
   // (z)    v0 ------ v1
   //        |      /  |
@@ -85,10 +86,10 @@ void HeightMapChunkBarn::RenderData::Initialize(
         u32 quadIdx = z * 16 + x;
         u32 baseIdx = quadIdx * 6;
 
-        u32 v0 = z * 17 + x;
-        u32 v1 = v0 + 1;
-        u32 v2 = v0 + 17;
-        u32 v3 = v2 + 1;
+        u32 v0 = x * 17 + z;
+        u32 v1 = v0 + 17;
+        u32 v2 = v0 + 1;
+        u32 v3 = v1 + 1;
 
         // Triangle 1: v0, v2, v1
         indices[chunkIdxOffset + baseIdx + 0] = v0;
@@ -340,8 +341,6 @@ void HeightMapChunkBarn::BuildScene(
   //if (totalChunks == 0)
   //  return;
 
-  HTTellText("RENDER TRIGGER");
-
   AssertMsg(totalChunks <= kMaxChunks, "Too many chunks loaded! Decrease m_viewDistance.");
 
   // Map vertex and index buffers.
@@ -355,128 +354,6 @@ void HeightMapChunkBarn::BuildScene(
     return;
   }
 
-  /*u32 currentVtxOffset = 0;
-  u32 currentIdxOffset = 0;
-  u32 processedChunks = 0;
-
-  // Process each loaded chunk.
-  for (const auto &pair: m_loadedChunks) {
-    const ChunkPos &chunkPos = pair.first;
-    const HeightMapChunk *chunk = pair.second;
-
-    // Check if chunk needs update.
-    auto renderIt = m_renderChunks.find(chunkPos);
-    bool needsUpdate = (renderIt == m_renderChunks.end() || renderIt->second.isDirty);
-
-    //if (!needsUpdate)
-    //  continue;
-
-    // Each chunk: 17x17 vertices, 16x16 quads = 32x16 triangles.
-    const u32 kChunkVtxCount = 17 * 17;
-    const u32 kChunkIdxCount = 16 * 16 * 6;
-
-    // Get height data.
-    const f32 *heights = chunk->GetHeights();
-
-    // Generate vertices with positions and normals.
-    for (u32 z = 0; z < 17; ++z) {
-      for (u32 x = 0; x < 17; ++x) {
-        u32 idx = z * 17 + x;
-        f32 height = heights[idx];
-
-        HTTellText(
-          "HEIGHT (%d, %d) (%d, %d) : %f",
-          pair.second->GetPos().x,
-          pair.second->GetPos().z,
-          x,
-          z,
-          height);
-
-        // World position.
-        f32 worldX = chunkPos.x * 16.0f + x;
-        f32 worldZ = chunkPos.z * 16.0f + z;
-
-        GrassShVertex &vtx = grassVtx[currentVtxOffset + idx];
-        vtx.a_position[0] = worldX;
-        vtx.a_position[1] = height;
-        vtx.a_position[2] = worldZ;
-
-        // Calculate normal using neighboring heights.
-        f32 hL = (x > 0)  ? heights[z * 17 + (x - 1)] : height;
-        f32 hR = (x < 16) ? heights[z * 17 + (x + 1)] : height;
-        f32 hD = (z > 0)  ? heights[(z - 1) * 17 + x] : height;
-        f32 hU = (z < 16) ? heights[(z + 1) * 17 + x] : height;
-
-        // Tangent vectors.
-        f32 tx = 2.0f, ty = hR - hL, tz = 0.0f;
-        f32 bx = 0.0f, by = hU - hD, bz = 2.0f;
-
-        // Cross product for normal.
-        f32 nx = ty * bz - tz * by;
-        f32 ny = tz * bx - tx * bz;
-        f32 nz = tx * by - ty * bx;
-
-        // Normalize.
-        f32 len = sqrtf(nx * nx + ny * ny + nz * nz);
-        if (len > 0.0f) {
-          nx /= len;
-          ny /= len;
-          nz /= len;
-        } else {
-          nx = 0.0f;
-          ny = 1.0f;
-          nz = 0.0f;
-        }
-
-        // Pack normal into BYTE4 format (range -1..1 -> -127..127).
-        i08 nnx = (i08)(nx * 127.0f);
-        i08 nny = (i08)(ny * 127.0f);
-        i08 nnz = (i08)(nz * 127.0f);
-        i08 nnw = 0;
-
-        vtx.a_normal = ((u32)(u08)nnx) | (((u32)(u08)nny) << 8) | (((u32)(u08)nnz) << 16) | (((u32)(u08)nnw) << 24);
-
-        // Keep default light values.
-      }
-    }
-
-    // Generate indices (two triangles per quad).
-    for (u32 z = 0; z < 16; ++z) {
-      for (u32 x = 0; x < 16; ++x) {
-        u32 quadIdx = z * 16 + x;
-        u32 baseIdx = currentIdxOffset + quadIdx * 6;
-
-        u32 v0 = currentVtxOffset + z * 17 + x;
-        u32 v1 = v0 + 1;
-        u32 v2 = v0 + 17;
-        u32 v3 = v2 + 1;
-
-        // Triangle 1: v0, v2, v1
-        grassIdx[baseIdx + 0] = v0;
-        grassIdx[baseIdx + 1] = v2;
-        grassIdx[baseIdx + 2] = v1;
-
-        // Triangle 2: v1, v2, v3
-        grassIdx[baseIdx + 3] = v1;
-        grassIdx[baseIdx + 4] = v2;
-        grassIdx[baseIdx + 5] = v3;
-      }
-    }
-
-    // Update render chunk state.
-    RenderChunk renderChunk;
-    renderChunk.pos = chunkPos;
-    renderChunk.vtxOffset = currentVtxOffset;
-    renderChunk.idxOffset = currentIdxOffset;
-    renderChunk.isDirty = false;
-    m_renderChunks[chunkPos] = renderChunk;
-
-    currentVtxOffset += kChunkVtxCount;
-    currentIdxOffset += kChunkIdxCount;
-    processedChunks++;
-  }
-  */
-
   u32 currentVtxOffset = 0
     , currentIdxOffset = 0
     , processedChunks = 0;
@@ -489,7 +366,8 @@ void HeightMapChunkBarn::BuildScene(
     // Generate vertices with positions and normals.
     for (u32 z = 0; z < 17; ++z) {
       for (u32 x = 0; x < 17; ++x) {
-        u32 idx = z * 17 + x;
+        // Note: GetRegion stores data in x-major order: buffer[x * zSize + z]
+        u32 idx = x * 17 + z;
         f32 height = heights[idx];
 
         // World position.
@@ -500,10 +378,11 @@ void HeightMapChunkBarn::BuildScene(
         TerrainDepthVertex vtx2 = {worldX, height, worldZ};
 
         // Calculate normal using neighboring heights.
-        f32 hL = (x > 0)  ? heights[z * 17 + (x - 1)] : height;
-        f32 hR = (x < 16) ? heights[z * 17 + (x + 1)] : height;
-        f32 hD = (z > 0)  ? heights[(z - 1) * 17 + x] : height;
-        f32 hU = (z < 16) ? heights[(z + 1) * 17 + x] : height;
+        // Data is stored in x-major order: heights[x * 17 + z]
+        f32 hL = (x > 0)  ? heights[(x - 1) * 17 + z] : height;
+        f32 hR = (x < 16) ? heights[(x + 1) * 17 + z] : height;
+        f32 hD = (z > 0)  ? heights[x * 17 + (z - 1)] : height;
+        f32 hU = (z < 16) ? heights[x * 17 + (z + 1)] : height;
 
         // Tangent vectors.
         f32 tx = 2.0f, ty = hR - hL, tz = 0.0f;
@@ -542,7 +421,7 @@ void HeightMapChunkBarn::BuildScene(
     currentVtxOffset += kChunkVtxCount;
     processedChunks++;
 
-    if (processedChunks >= 2)
+    if (processedChunks >= 8)
       break;
   }
 
@@ -553,11 +432,13 @@ void HeightMapChunkBarn::BuildScene(
   m_depth.ClearRenderChunk();
   m_mats.ClearRenderChunk();
 
-  m_depth.AddRenderChunk(0, kChunkIdxCount, 0);
-  m_mats.AddRenderChunk(0, kChunkIdxCount, 0);
+  //m_depth.AddRenderChunk(0, kChunkIdxCount, 0);
+  //m_mats.AddRenderChunk(0, kChunkIdxCount, 0);
 
-  m_depth.AddRenderChunk(kChunkIdxCount, kChunkIdxCount, kChunkVtxCount);
-  m_mats.AddRenderChunk(kChunkIdxCount, kChunkIdxCount, kChunkVtxCount);
+  for (i32 i = 0; i < processedChunks; i++) {
+    m_depth.AddRenderChunk(kChunkIdxCount * i, kChunkIdxCount, kChunkVtxCount * i);
+    m_mats.AddRenderChunk(kChunkIdxCount * i, kChunkIdxCount, kChunkVtxCount * i);
+  }
 
   m_depth.Queue();
   m_mats.Queue();
