@@ -60,6 +60,7 @@ void Mod::OnLevelLoad(
 ) {
   HTTellText("Mod::OnLevelLoad(%s)", levelName);
   m_chunks->OnLevelLoad(
+    m_game,
     m_game->resolveMember<ResourceManager *>("resources"),
     m_game->resolveMember<Scene *>("scene"),
     m_game->resolveMember<MaterialDefBarn *>("materialDefBarn"),

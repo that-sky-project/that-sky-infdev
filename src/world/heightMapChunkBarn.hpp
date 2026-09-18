@@ -63,6 +63,12 @@ META_DECLARE_CLASS(HeightMapChunkBarn)
 
 class HeightMapChunkBarn: public Module {
 private:
+  static constexpr u32 kMaxChunks = 13 * 13;
+  // Each chunk: 17x17 vertices, 16x16 quads = 32x16 triangles.
+  static constexpr u32 kChunkVtxCount = 17 * 17;
+  static constexpr u32 kChunkIdxCount = 16 * 16 * 6;
+  static constexpr cstring kTestInfdevLevel = "CandleSpace";
+
   struct RenderData {
     void Initialize(
       cstring tag,
@@ -71,10 +77,13 @@ private:
       u32 attrCount,
       ResourceManager *resources,
       cstring shader,
-      RenderList *renderList);
+      RenderList *renderList,
+      Heap *heap);
     void Terminate();
 
     inline void SetPrimitiveCount(u32 count) { render.SetPrimitiveCapacity(count); }
+    inline void ClearRenderChunk() { render.ClearRenderChunk(); }
+    inline void AddRenderChunk(u32 idxOffset, u32 idxCount, i32 vtxOffset) { render.AddRenderChunk(idxOffset, idxCount, vtxOffset); }
 
     inline void *MapVtxBuffer() { return data.GetVertexBuffer(0).MapBuffer(); }
     inline void UnmapVtxBuffer() { data.GetVertexBuffer(0).UnmapBuffer(); }
@@ -86,7 +95,7 @@ private:
     inline void Dequeue() { render.Dequeue(); }
 
     VertexData data = {};
-    VertexRender render = {};
+    VertexRenderSparse render = {};
   };
 
   struct RenderChunk {
@@ -97,11 +106,6 @@ private:
   };
 
 private:
-  // Each chunk: 17x17 vertices, 16x16 quads = 32x16 triangles.
-  static constexpr u32 kChunkVtxCount = 17 * 17;
-  static constexpr u32 kChunkIdxCount = 16 * 16 * 6;
-  static constexpr cstring kTestInfdevLevel = "CandleSpace";
-
   static void ms_ChunkUpdateThread(HeightMapChunkBarn *heightMapChunkBarn);
 
 public:
@@ -111,6 +115,7 @@ public:
   void Initialize();
   void Terminate();
   void OnLevelLoad(
+    Game *game,
     ResourceManager *resources,
     Scene *scene,
     MaterialDefBarn *materialDefBarn,
@@ -123,6 +128,8 @@ public:
     cstring levelName);
   void BuildScene(
     cstring levelName);
+
+  //HeightMapChunkSourceParams *CreateParams(MetaClass *mc);
 
 private:
   bool m_IsChunkQueued(const ChunkPos &pos);
@@ -140,11 +147,13 @@ private:
   i32 m_seed = 1196250184;
   u32 m_viewDistance = 4;
   HeightMapChunkSource *m_chunkSource = nullptr;
+  ChunkPos m_lastPos = {-2147483647, -2147483647};
 
   std::unordered_set<ChunkPos> m_queuedChunks = {};
   std::unordered_map<ChunkPos, const HeightMapChunk *> m_loadedChunks = {};
   std::unordered_map<ChunkPos, RenderChunk> m_renderChunks = {};
 
+  Heap *m_heightMapVertexHeap = nullptr;
   RenderData m_depth = {};
   RenderData m_mats = {};
 };

@@ -3,12 +3,15 @@
 #include <cstring>
 #include <cmath>
 #include <includes/htmodloader.h>
+#include <Memory/Heap.hpp>
 #include "sky/skyGfx.hpp"
 #include "sky/skyScene.hpp"
 #include "sky/skyMaterialDefBarn.hpp"
 #include "sky/skyTypePlaceholders.hpp"
 #include "render/vertexArrayElements.hpp"
 #include "world/heightMapChunkBarn.hpp"
+
+HEAP_TAG_REGISTER(tag_HeightMapChunk)
 
 // ----------------------------------------------------------------------------
 // [SECTION] HeightMapChunkSource
@@ -55,24 +58,72 @@ void HeightMapChunkBarn::RenderData::Initialize(
   u32 attrCount,
   ResourceManager *resources,
   cstring shader,
-  RenderList *renderList
+  RenderList *renderList,
+  Heap *heap
 ) {
-  data.BeginDefinition("Infdev_TerrainGrass", 17 * 17 * 169);
-  data.AddVertexBuffer(0, types, attrs, attrCount, kGfxBind_UploadTriple, 0, nullptr);
+  data.BeginDefinition(tag, kChunkVtxCount * kMaxChunks);
+
+  // Prefill indices.
+  u16 *indices = (u16 *)heap->Allocate(
+    sizeof(u16) * kChunkIdxCount * kMaxChunks,
+    tag_HeightMapChunk,
+    alignof(u16));
+
+  // Vertices and indices:
+  //       (x)      (x+1)
+  // (z)    v0 ------ v1
+  //        |      /  |
+  //        |    /    |
+  //        |  /      |
+  // (z+1)  v2 ------ v3
+  //
+  // TODO: Optimize with SIMD.
+  for (u32 c = 0; c < kMaxChunks; c++) {
+    u32 chunkIdxOffset = c * kChunkIdxCount;
+    for (u32 z = 0; z < 16; z++) {
+      for (u32 x = 0; x < 16; x++) {
+        u32 quadIdx = z * 16 + x;
+        u32 baseIdx = quadIdx * 6;
+
+        u32 v0 = z * 17 + x;
+        u32 v1 = v0 + 1;
+        u32 v2 = v0 + 17;
+        u32 v3 = v2 + 1;
+
+        // Triangle 1: v0, v2, v1
+        indices[chunkIdxOffset + baseIdx + 0] = v0;
+        indices[chunkIdxOffset + baseIdx + 1] = v2;
+        indices[chunkIdxOffset + baseIdx + 2] = v1;
+
+        // Triangle 2: v1, v2, v3
+        indices[chunkIdxOffset + baseIdx + 3] = v1;
+        indices[chunkIdxOffset + baseIdx + 4] = v2;
+        indices[chunkIdxOffset + baseIdx + 5] = v3;
+      }
+    }
+  }
+
   data.AddIndexBuffer(
     0,
-    kGfxType_UINT,
-    kGfxBind_UploadTriple,
-    3 * 2 * 16 * 16 * 169,
-    nullptr);
+    kGfxType_SHORT,
+    kGfxBind_UploadSingle,
+    kChunkIdxCount * kMaxChunks,
+    indices);
+  data.AddVertexBuffer(0, types, attrs, attrCount, kGfxBind_UploadTriple, 0, nullptr);
   data.EndDefinition();
 
+  // Free the temporary index buffer.
+  heap->Free(indices);
+
   render.Initialize(&data, resources, shader, renderList, 0, nullptr);
-  render.SetPrimitiveCapacity(0);
+
+  // Allocate chunks.
+  render.AllocVertexSparse(true, heap, kMaxChunks);
 }
 
 void HeightMapChunkBarn::RenderData::Terminate() {
   render.Dequeue();
+  render.AllocVertexSparse(false, nullptr, 0);
   render.Release();
   data.Release();
 }
@@ -83,6 +134,7 @@ void HeightMapChunkBarn::RenderData::Terminate() {
 
 META_REGISTER_CLASS(HeightMapChunkBarn, MetaClassImpl<Module>::Must_call_META_REGISTER_CLASS)
 
+// Chunk generator thread.
 void HeightMapChunkBarn::ms_ChunkUpdateThread(
   HeightMapChunkBarn *heightMapChunkBarn
 ) {
@@ -110,14 +162,26 @@ void HeightMapChunkBarn::ms_ChunkUpdateThread(
   }
 }
 
+// Initialize the object.
 META_REGISTER_FUNCTION_MEMBER(HeightMapChunkBarn, Initialize)
 void HeightMapChunkBarn::Initialize() {
+  // Create Heap object.
+  m_heightMapVertexHeap = new Heap();
+  m_heightMapVertexHeap->Initialize(
+    new char[0x2000000],
+    0x2000000, // ~33MiB
+    "HeightMapChunkBarn",
+    true,
+    false
+  );
+
   // Initialize world generator.
   m_chunkSource->Initialize(m_seed);
   m_running = true;
   m_chunkUpdateThread = std::thread(ms_ChunkUpdateThread, this);
 }
 
+// Deinitialize the object.
 META_REGISTER_FUNCTION_MEMBER(HeightMapChunkBarn, Terminate)
 void HeightMapChunkBarn::Terminate() {
   m_running = false;
@@ -135,11 +199,19 @@ void HeightMapChunkBarn::Terminate() {
   }
 
   m_chunkSource->Terminate();
+
+  // NOTE: A more stable implementation would be to first take out `m_base` and
+  // release it. However, many other objects in Sky (at least in my view) do not
+  // do this, so let's just release the `Heap` itself.
+  m_heightMapVertexHeap->Terminate();
+  delete m_heightMapVertexHeap;
 }
 
+// Initialize chunk renderer contexts.
 META_REGISTER_FUNCTION_MEMBER(HeightMapChunkBarn, OnLevelLoad)
 META_DATA_MEMBER_FUNCTION(HeightMapChunkBarn, OnLevelLoad, ArgName, "(levelName)")
 void HeightMapChunkBarn::OnLevelLoad(
+  Game *game,
   ResourceManager *resources,
   Scene *scene,
   MaterialDefBarn *materialDefBarn,
@@ -156,7 +228,8 @@ void HeightMapChunkBarn::OnLevelLoad(
     TerrainDepthVertex::kNumAttrs,
     resources,
     "TerrainDepth",
-    scene->GetRenderListByName("TerrainDepth")
+    scene->GetRenderListByName("TerrainDepth"),
+    m_heightMapVertexHeap
   );
   m_mats.Initialize(
     "Infdev_GRASSSH",
@@ -165,15 +238,18 @@ void HeightMapChunkBarn::OnLevelLoad(
     GrassShVertex::kNumAttrs,
     resources,
     "GrassSh",
-    scene->GetRenderListByName("TerrainMats")
+    scene->GetRenderListByName("TerrainMats"),
+    m_heightMapVertexHeap
   );
 
+  // Add material uniforms.
   MaterialDefBarn::SetMaterialShaderUniforms(
     m_mats.render.GetPipelineInstance(),
     materialDefBarn->GetDef(kMaterial_Grass),
     resources);
 }
 
+// Deinitialize chunk renderer contexts.
 META_REGISTER_FUNCTION_MEMBER(HeightMapChunkBarn, OnLevelUnload)
 META_DATA_MEMBER_FUNCTION(HeightMapChunkBarn, OnLevelUnload, ArgName, "(levelName)")
 void HeightMapChunkBarn::OnLevelUnload(
@@ -187,6 +263,7 @@ void HeightMapChunkBarn::OnLevelUnload(
   m_mats.Terminate();
 }
 
+// Load and unload chunks by the position of local avatar.
 META_REGISTER_FUNCTION_MEMBER(HeightMapChunkBarn, Update)
 META_DATA_MEMBER_FUNCTION(HeightMapChunkBarn, Update, ArgName, "(levelName)")
 void HeightMapChunkBarn::Update(
@@ -198,6 +275,11 @@ void HeightMapChunkBarn::Update(
     return;
 
   ChunkPos avatarChunkPos = {0, 0};
+
+  if (m_lastPos == avatarChunkPos)
+    return;
+
+  m_lastPos = avatarChunkPos;
 
   i32 viewDist = (i32)m_viewDistance;
   std::vector<ChunkPos> chunksToUnload;
@@ -234,6 +316,7 @@ void HeightMapChunkBarn::Update(
   }
 }
 
+// Build vertices for visible chunks.
 META_REGISTER_FUNCTION_MEMBER(HeightMapChunkBarn, BuildScene)
 META_DATA_MEMBER_FUNCTION(HeightMapChunkBarn, BuildScene, ArgName, "(levelName)")
 void HeightMapChunkBarn::BuildScene(
@@ -259,20 +342,16 @@ void HeightMapChunkBarn::BuildScene(
 
   HTTellText("RENDER TRIGGER");
 
-  AssertMsg(totalChunks <= 169, "Too many chunks loaded! Decrease m_viewDistance.");
+  AssertMsg(totalChunks <= kMaxChunks, "Too many chunks loaded! Decrease m_viewDistance.");
 
   // Map vertex and index buffers.
   TerrainDepthVertex *depthVtx = (TerrainDepthVertex *)m_depth.MapVtxBuffer();
   GrassShVertex *grassVtx = (GrassShVertex *)m_mats.MapVtxBuffer();
-  u32 *depthIdx = (u32 *)m_depth.MapIdxBuffer();
-  u32 *grassIdx = (u32 *)m_mats.MapIdxBuffer();
 
   // Return if failed to map buffers.
-  if (!grassVtx || !grassIdx || !depthVtx || !depthIdx) {
+  if (!grassVtx || !depthVtx) {
     if (grassVtx) m_mats.UnmapVtxBuffer();
-    if (grassIdx) m_mats.UnmapIdxBuffer();
     if (depthVtx) m_depth.UnmapVtxBuffer();
-    if (depthIdx) m_depth.UnmapIdxBuffer();
     return;
   }
 
@@ -460,37 +539,7 @@ void HeightMapChunkBarn::BuildScene(
       }
     }
 
-    // Generate indices (two triangles per quad).
-    for (u32 z = 0; z < 16; ++z) {
-      for (u32 x = 0; x < 16; ++x) {
-        u32 quadIdx = z * 16 + x;
-        u32 baseIdx = currentIdxOffset + quadIdx * 6;
-
-        u32 v0 = currentVtxOffset + z * 17 + x;
-        u32 v1 = v0 + 1;
-        u32 v2 = v0 + 17;
-        u32 v3 = v2 + 1;
-
-        // Triangle 1: v0, v2, v1
-        grassIdx[baseIdx + 0] = v0;
-        grassIdx[baseIdx + 1] = v2;
-        grassIdx[baseIdx + 2] = v1;
-        depthIdx[baseIdx + 0] = v0;
-        depthIdx[baseIdx + 1] = v2;
-        depthIdx[baseIdx + 2] = v1;
-
-        // Triangle 2: v1, v2, v3
-        grassIdx[baseIdx + 3] = v1;
-        grassIdx[baseIdx + 4] = v2;
-        grassIdx[baseIdx + 5] = v3;
-        depthIdx[baseIdx + 3] = v1;
-        depthIdx[baseIdx + 4] = v2;
-        depthIdx[baseIdx + 5] = v3;
-      }
-    }
-
     currentVtxOffset += kChunkVtxCount;
-    currentIdxOffset += kChunkIdxCount;
     processedChunks++;
 
     if (processedChunks >= 2)
@@ -499,17 +548,28 @@ void HeightMapChunkBarn::BuildScene(
 
   // Unmap buffers.
   m_depth.UnmapVtxBuffer();
-  m_depth.UnmapIdxBuffer();
   m_mats.UnmapVtxBuffer();
-  m_mats.UnmapIdxBuffer();
 
-  // Set primitive count and queue for rendering.
-  m_depth.SetPrimitiveCount(1536 * 2);
-  m_mats.SetPrimitiveCount(1536 * 2);
+  m_depth.ClearRenderChunk();
+  m_mats.ClearRenderChunk();
+
+  m_depth.AddRenderChunk(0, kChunkIdxCount, 0);
+  m_mats.AddRenderChunk(0, kChunkIdxCount, 0);
+
+  m_depth.AddRenderChunk(kChunkIdxCount, kChunkIdxCount, kChunkVtxCount);
+  m_mats.AddRenderChunk(kChunkIdxCount, kChunkIdxCount, kChunkVtxCount);
 
   m_depth.Queue();
   m_mats.Queue();
 }
+
+//META_REGISTER_FUNCTION_MEMBER(HeightMapChunkBarn, CreateParams)
+//META_DATA_MEMBER_FUNCTION(HeightMapChunkBarn, CreateParams, ObjectFactory_CreatesType, "HeightMapChunkSourceParams")
+//HeightMapChunkSourceParams *HeightMapChunkBarn::CreateParams(
+//  MetaClass *mc
+//) {
+//
+//}
 
 bool HeightMapChunkBarn::m_IsChunkQueued(
   const ChunkPos &pos
