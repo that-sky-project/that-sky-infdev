@@ -94,7 +94,7 @@ public:
       perInstance = 0;
     }
 
-    // Bytes per element (sum of attribute sizes)
+    // Bytes per element (sum of attribute sizes).
     u16 stride = 0;
     // TODO: Maybe instance count.
     u16 perInstance = 0;
@@ -267,9 +267,9 @@ public:
   //
   // NOTE: The function may called AllocateChunks().
   void AllocVertexSparse(
-    bool useChunks,
+    bool useChunk,
     Heap *heap,
-    u32 maxChunkCount);
+    u32 chunkCapacity);
 
   // A render chunk represents an indirect subcommand. useChunks must be set
   // with AllocVertexSparse() before use this function.
