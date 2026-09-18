@@ -510,9 +510,9 @@ void HeightMapChunkBarn::BuildScene(
         f32 bx = 0.0f, by = hU - hD, bz = 2.0f;
 
         // Cross product for normal.
-        f32 nx = ty * bz - tz * by;
-        f32 ny = tz * bx - tx * bz;
-        f32 nz = tx * by - ty * bx;
+        f32 nx = by * tz - bz * ty;
+        f32 ny = bz * tx - bx * tz;
+        f32 nz = bx * ty - by * tx;
 
         // Normalize.
         f32 len = sqrtf(nx * nx + ny * ny + nz * nz);
