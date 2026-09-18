@@ -52,15 +52,15 @@ struct R8G8B8A8_UNORM {
   u08 w;
 };
 
-struct GrassShVertex {
+struct TerrainMaterialVertex {
   static constexpr u32 kNumAttrs = 5;
   static constexpr GfxType kTypes[kNumAttrs] = {kGfxType_FLOAT3, kGfxType_BYTE4, kGfxType_UBYTE4, kGfxType_UBYTE4, kGfxType_UBYTE4};
   static constexpr GfxAttr kAttrs[kNumAttrs] = {kGfxAttr_Position, kGfxAttr_Normal, kGfxAttr_Light0, kGfxAttr_Light1, kGfxAttr_Light2};
 
-  ~GrassShVertex() = default;
-  GrassShVertex() = default;
+  ~TerrainMaterialVertex() = default;
+  TerrainMaterialVertex() = default;
 
-  GrassShVertex(
+  TerrainMaterialVertex(
     f32 x,
     f32 y,
     f32 z
@@ -75,6 +75,29 @@ struct GrassShVertex {
   u32 a_light0 = 0x7F7F7F7F;
   u32 a_light1 = 0x0000FFB3;
   u32 a_light2 = 0xFF80FF80;
+};
+
+using GrassShVertex = TerrainMaterialVertex;
+
+struct TerrainDepthVertex {
+  static constexpr u32 kNumAttrs = 1;
+  static constexpr GfxType kTypes[kNumAttrs] = {kGfxType_FLOAT3};
+  static constexpr GfxAttr kAttrs[kNumAttrs] = {kGfxAttr_Position};
+
+  ~TerrainDepthVertex() = default;
+  TerrainDepthVertex() = default;
+
+  TerrainDepthVertex(
+    f32 x,
+    f32 y,
+    f32 z
+  ) {
+    a_position[0] = x;
+    a_position[1] = y;
+    a_position[2] = z;
+  }
+
+  f32 a_position[3] = {0};
 };
 
 struct GrassShMeshVertex {
@@ -101,27 +124,6 @@ struct GrassShMeshVertex {
   u32 a_light1 = 0x0000FFB3;
   u32 a_light2 = 0xFF80FF80;
   u32 a_color  = 0xFFFFFFFF;
-};
-
-struct TerrainDepthVertex {
-  static constexpr u32 kNumAttrs = 1;
-  static constexpr GfxType kTypes[kNumAttrs] = {kGfxType_FLOAT3};
-  static constexpr GfxAttr kAttrs[kNumAttrs] = {kGfxAttr_Position};
-
-  ~TerrainDepthVertex() = default;
-  TerrainDepthVertex() = default;
-
-  TerrainDepthVertex(
-    f32 x,
-    f32 y,
-    f32 z
-  ) {
-    a_position[0] = x;
-    a_position[1] = y;
-    a_position[2] = z;
-  }
-
-  f32 a_position[3] = {0};
 };
 
 #endif

@@ -328,21 +328,6 @@ void HeightMapChunkBarn::BuildScene(
 
   std::shared_lock<std::shared_mutex> lock(m_lock);
 
-  // Count total primitives needed.
-  u32 totalChunks = 0;
-  for (const auto &pair: m_loadedChunks) {
-    const ChunkPos &pos = pair.first;
-    auto it = m_renderChunks.find(pos);
-    if (it == m_renderChunks.end() || it->second.isDirty) {
-      totalChunks++;
-    }
-  }
-
-  //if (totalChunks == 0)
-  //  return;
-
-  AssertMsg(totalChunks <= kMaxChunks, "Too many chunks loaded! Decrease m_viewDistance.");
-
   // Map vertex and index buffers.
   TerrainDepthVertex *depthVtx = (TerrainDepthVertex *)m_depth.MapVtxBuffer();
   GrassShVertex *grassVtx = (GrassShVertex *)m_mats.MapVtxBuffer();
@@ -432,9 +417,6 @@ void HeightMapChunkBarn::BuildScene(
   m_depth.ClearRenderChunk();
   m_mats.ClearRenderChunk();
 
-  //m_depth.AddRenderChunk(0, kChunkIdxCount, 0);
-  //m_mats.AddRenderChunk(0, kChunkIdxCount, 0);
-
   for (i32 i = 0; i < processedChunks; i++) {
     m_depth.AddRenderChunk(kChunkIdxCount * i, kChunkIdxCount, kChunkVtxCount * i);
     m_mats.AddRenderChunk(kChunkIdxCount * i, kChunkIdxCount, kChunkVtxCount * i);
@@ -498,9 +480,6 @@ void HeightMapChunkBarn::m_UnloadChunk(
     return;
   const HeightMapChunk *chunk = it->second;
   m_loadedChunks.erase(it);
-
-  // Remove render chunk context.
-  m_renderChunks.erase(pos);
 
   delete chunk;
 }

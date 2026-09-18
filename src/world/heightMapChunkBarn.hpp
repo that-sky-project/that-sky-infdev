@@ -88,9 +88,6 @@ private:
     inline void *MapVtxBuffer() { return data.GetVertexBuffer(0).MapBuffer(); }
     inline void UnmapVtxBuffer() { data.GetVertexBuffer(0).UnmapBuffer(); }
 
-    inline void *MapIdxBuffer() { return data.GetIndexBuffer(0).buffer.MapBuffer(); }
-    inline void UnmapIdxBuffer() {  data.GetIndexBuffer(0).buffer.UnmapBuffer(); }
-
     inline void Queue() { render.Queue(); }
     inline void Dequeue() { render.Dequeue(); }
 
@@ -101,7 +98,6 @@ private:
   struct RenderChunk {
     ChunkPos pos = {};
     u32 vtxOffset = 0;
-    u32 idxOffset = 0;
     bool isDirty = true;
   };
 
@@ -151,7 +147,9 @@ private:
 
   std::unordered_set<ChunkPos> m_queuedChunks = {};
   std::unordered_map<ChunkPos, const HeightMapChunk *> m_loadedChunks = {};
-  std::unordered_map<ChunkPos, RenderChunk> m_renderChunks = {};
+
+  u32 m_renderChunkCount = 0;
+  RenderChunk *m_renderChunks = nullptr;
 
   Heap *m_heightMapVertexHeap = nullptr;
   RenderData m_depth = {};
