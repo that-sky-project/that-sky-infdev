@@ -45,6 +45,13 @@ enum Material {
 class MaterialDef { };
 
 class MaterialDefBarn {
+private:
+  ~MaterialDefBarn() = default;
+  MaterialDefBarn() = default;
+  MaterialDefBarn(const MaterialDefBarn &) = delete;
+  MaterialDefBarn(MaterialDefBarn &&) = delete;
+  MaterialDefBarn &operator=(const MaterialDefBarn &) = delete;
+
 public:
   static void SetMaterialShaderUniforms(
     PipelineInstance *pipelineInstance,
@@ -53,6 +60,10 @@ public:
 
   const MaterialDef &GetDef(
     Material mat);
+
+private:
+  u64 _align = 0;
+  u08 _gap[0x0120 - 0x08] = {0};
 };
 
 #endif

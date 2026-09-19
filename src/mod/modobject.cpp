@@ -1,5 +1,6 @@
 #include <includes/htmodloader.h>
 #include <Base/Meta.hpp>
+#include "sky/skyAvatarBarn.hpp"
 #include "mod/modobject.hpp"
 
 META_REGISTER_CLASS(Mod, MetaClassImpl<Module>::Must_call_META_REGISTER_CLASS)

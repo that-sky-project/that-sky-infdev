@@ -8,6 +8,7 @@
 #include "sky/skyScene.hpp"
 #include "sky/skyMaterialDefBarn.hpp"
 #include "sky/skyTypePlaceholders.hpp"
+#include "sky/skyAvatarBarn.hpp"
 #include "render/vertexArrayElements.hpp"
 #include "world/heightMapChunkBarn.hpp"
 
@@ -275,7 +276,14 @@ void HeightMapChunkBarn::Update(
   if (strcmp(levelName, kTestInfdevLevel))
     return;
 
-  ChunkPos avatarChunkPos = {0, 0};
+  Avatar *avatar = avatarBarn->TryGetLocalAvatar(false);
+  if (!avatar)
+    return;
+
+  ChunkPos avatarChunkPos = {
+    (i32)floorf(avatar->GetTransform()[3][0] / 16.0f), 
+    (i32)floorf(avatar->GetTransform()[3][2] / 16.0f)
+  };
 
   if (m_lastPos == avatarChunkPos)
     return;
@@ -395,7 +403,7 @@ void HeightMapChunkBarn::BuildScene(
         vtx.a_normal = (i32)R8G8B8A8_SNORM(nx, ny, nz, 1.0f);
 
         // Keep default light values.
-        vtx.a_light0 = 0x7F7F7F7F;
+        vtx.a_light0 = 0x407F7F7F;
         vtx.a_light1 = 0x0000FFB3;
         vtx.a_light2 = 0xFF80FF80;
         grassVtx[currentVtxOffset + idx] = vtx;
@@ -406,8 +414,8 @@ void HeightMapChunkBarn::BuildScene(
     currentVtxOffset += kChunkVtxCount;
     processedChunks++;
 
-    if (processedChunks >= 8)
-      break;
+    //if (processedChunks >= 8)
+    //  break;
   }
 
   // Unmap buffers.
@@ -417,7 +425,7 @@ void HeightMapChunkBarn::BuildScene(
   m_depth.ClearRenderChunk();
   m_mats.ClearRenderChunk();
 
-  for (i32 i = 0; i < processedChunks; i++) {
+  for (u32 i = 0; i < processedChunks; i++) {
     m_depth.AddRenderChunk(kChunkIdxCount * i, kChunkIdxCount, kChunkVtxCount * i);
     m_mats.AddRenderChunk(kChunkIdxCount * i, kChunkIdxCount, kChunkVtxCount * i);
   }

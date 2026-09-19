@@ -96,5 +96,8 @@
     <ClCompile Include="..\..\..\src\world\heightMapChunkBarn.cpp">
       <Filter>src\world</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\sky\functions\skyAvatarBarn.cpp">
+      <Filter>src\sky\functions</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

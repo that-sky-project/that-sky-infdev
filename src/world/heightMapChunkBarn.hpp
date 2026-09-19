@@ -11,6 +11,7 @@
 #include "mod/moduleBarnExt.hpp"
 #include "sky/skyGame.hpp"
 #include "sky/skyVertex.hpp"
+#include "sky/skyAvatarBarn.hpp"
 #include "sky/skyTypePlaceholders.hpp"
 #include "world/synth/perlinNoise.hpp"
 
@@ -63,7 +64,7 @@ META_DECLARE_CLASS(HeightMapChunkBarn)
 
 class HeightMapChunkBarn: public Module {
 private:
-  static constexpr u32 kMaxChunks = 13 * 13;
+  static constexpr u32 kMaxChunks = 49 * 49;
   // Each chunk: 17x17 vertices, 16x16 quads = 32x16 triangles.
   static constexpr u32 kChunkVtxCount = 17 * 17;
   static constexpr u32 kChunkIdxCount = 16 * 16 * 6;
@@ -141,7 +142,7 @@ private:
   std::thread m_chunkUpdateThread = {};
   bool m_running = false;
   i32 m_seed = 1196250184;
-  u32 m_viewDistance = 4;
+  u32 m_viewDistance = 1;
   HeightMapChunkSource *m_chunkSource = nullptr;
   ChunkPos m_lastPos = {-2147483647, -2147483647};
 
