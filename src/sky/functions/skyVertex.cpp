@@ -3,6 +3,8 @@
 #include "sky/skyPrivate.hpp"
 #include "sky/skyVertex.hpp"
 
+HEAP_TAG_REGISTER(tag_VertexSparse)
+
 // ----------------------------------------------------------------------------
 // [SECTION] VertexData
 // ----------------------------------------------------------------------------
@@ -168,21 +170,83 @@ void VertexRender::Initialize(
     VertexRender *, VertexData *, ResourceManager *, cstring, RenderList *, u32, void *);
   static const Rva s_VertexRender_Initialize = 0x000FF140;
   ((PFN)s_VertexRender_Initialize())(
-    this, renderData, resources, resourceName, renderList, a5, a6);sizeof(VertexRender);
+    this, renderData, resources, resourceName, renderList, a5, a6);
 }
 
 void VertexRender::Queue() {
   using PFN = void (*)(VertexRender *);
   static const Rva s_VertexRender_Queue = 0x001002A0;
   ((PFN)s_VertexRender_Queue())(this);
+  /*if (m_isInitialized && !m_queued && GetRenderablePrimitiveCount() && unk_5) {
+    if (m_renderList)
+      m_renderList->EnqueueRender(this);
+    m_queued = true;
+  }*/
+}
+
+void VertexRender::Dequeue() {
+  m_queued = false;
+}
+
+void VertexRender::Release() {
+  using PFN = void (*)(VertexRender *);
+  static const Rva s_VertexRender_Release = 0x00100060;
+  ((PFN)s_VertexRender_Release())(this);
 }
 
 void VertexRenderSparse::AllocVertexSparse(
-  bool a2,
+  bool useChunk,
   Heap *heap,
-  u32 a4
+  u32 chunkCapacity
 ) {
   using PFN = void (*)(VertexRenderSparse *, bool, Heap *, u32);
   static const Rva s_VertexRender_AllocVertexSparse = 0x001014D0;
-  ((PFN)s_VertexRender_AllocVertexSparse())(this, a2, heap, a4);
+  ((PFN)s_VertexRender_AllocVertexSparse())(this, useChunk, heap, chunkCapacity);
+
+  /*// Release previous chunk data.
+  if (m_chunkData) {
+    if (m_heap != heap || !useChunk || m_chunkCapacity != chunkCapacity) {
+      if (m_heap) m_heap->Free(m_chunkData);
+      m_chunkData = nullptr;
+    }
+  }
+
+  // Set new chunk heap and capacity.
+  m_useChunk = useChunk;
+  if (useChunk) {
+    m_heap = heap;
+    m_chunkCapacity = chunkCapacity;
+  }
+  m_chunkCount = 0;
+  unk_9[0] = 0;
+
+  // Allocate new chunk data.
+  if (useChunk) {
+    auto chunkBufferSize = sizeof(VertexRenderSparse::Chunk) * chunkCapacity;
+    auto chunkData = (VertexRenderSparse::Chunk *)heap->Allocate(
+      chunkBufferSize,
+      tag_VertexSparse,
+      alignof(VertexRenderSparse::Chunk)
+    );
+    if (chunkCapacity)
+      memset(chunkData, 0, chunkBufferSize);
+    m_chunkData = chunkData;
+  }*/
+}
+
+void VertexRenderSparse::AddRenderChunk(
+  u32 idxOffset,
+  u32 idxCount,
+  i32 vtxOffset
+) {
+  if (m_useChunk && idxCount) {
+    if (m_chunkCount < m_chunkCapacity) {
+      m_chunkData[m_chunkCount] = VertexRenderSparse::Chunk(idxOffset, idxCount, vtxOffset);
+      m_chunkCount++;
+    }
+  }
+}
+
+void VertexRenderSparse::ClearRenderChunk() {
+  m_chunkCount = 0;
 }

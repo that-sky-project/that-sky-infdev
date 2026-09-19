@@ -21,6 +21,8 @@ enum GfxType: u08 {
   kGfxType_HALF2,
   kGfxType_HALF3,
   kGfxType_HALF4,
+  // NOTE: USHORT and SHORT may be incorrect and should be swapped.
+  // "VulkanRenderer.cpp", 2086i64, "false", 1i64; only accepts 9 (UINT) and 17 (SHORT?)
   kGfxType_SHORT,
   kGfxType_SHORT2,
   kGfxType_SHORT3,

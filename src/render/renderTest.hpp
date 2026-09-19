@@ -43,8 +43,8 @@ private:
   VertexRender endportalR;
   VertexData endportalD;
 
-  void *depthVtxBuffer;
-  void *matVtxBuffer;
+  void *depthVtxBuffer = nullptr;
+  void *matVtxBuffer = nullptr;
 
   //std::vector<TerrainRenderChunk *> chunks = {};
 };

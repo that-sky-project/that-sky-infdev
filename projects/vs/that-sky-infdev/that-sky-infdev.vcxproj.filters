@@ -28,6 +28,9 @@
     <Filter Include="src\mod\scriptEngine">
       <UniqueIdentifier>{01f332b7-d6a8-40fc-a5b3-facff0907185}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\world">
+      <UniqueIdentifier>{2b68f887-9b73-4897-a82e-50df67da2c57}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\dllmain.cpp">
@@ -66,9 +69,6 @@
     <ClCompile Include="..\..\..\src\sky\functions\skyMaterialDefBarn.cpp">
       <Filter>src\sky\functions</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\render\terrainRender.cpp">
-      <Filter>src\render</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\sky\functions\skyGpuBuffer.cpp">
       <Filter>src\sky\functions</Filter>
     </ClCompile>
@@ -92,6 +92,12 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\mod\moduleBarnExt.cpp">
       <Filter>src\mod</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\world\heightMapChunkBarn.cpp">
+      <Filter>src\world</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\sky\functions\skyAvatarBarn.cpp">
+      <Filter>src\sky\functions</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

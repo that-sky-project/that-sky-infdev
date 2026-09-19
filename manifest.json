@@ -6,7 +6,8 @@
   "description": "Render and infinite world test.",
   "main": "that-sky-infdev.dll",
   "dependencies": {
-    "htmodloader": ">=1.10.0"
+    "htmodloader": ">=1.10.0",
+    "that-sky-modbase": ">=1.0.0"
   },
   "keywords": [],
   "author": "HTMonkeyG",

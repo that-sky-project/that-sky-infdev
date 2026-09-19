@@ -94,7 +94,7 @@ public:
       perInstance = 0;
     }
 
-    // Bytes per element (sum of attribute sizes)
+    // Bytes per element (sum of attribute sizes).
     u16 stride = 0;
     // TODO: Maybe instance count.
     u16 perInstance = 0;
@@ -159,6 +159,10 @@ private:
   const char *m_name = "";
 };
 
+// NOTE: For unknown reasons, Sky's disassembly blurs the boundary between the
+//       `VertexRender` and `VertexRenderSparse` objects, for example in the
+//       `GetRenderablePrimitiveCount` function. Therefore, it is recommended to use
+//       `VertexRenderSparse` in all rendering-related content for maximum compatibility.
 class VertexRender {
 private:
   VertexRender(const VertexRender &) = default;
@@ -243,22 +247,42 @@ private:
   VertexRenderSparse &operator=(const VertexRenderSparse &) = default;
 
 private:
+  // Indirect sub-command.
   struct Chunk {
+    Chunk(u32 idxOffset, u32 idxCount, i32 vtxOffset)
+      : idxOffset(idxOffset), idxCount(idxCount), vtxOffset(vtxOffset) { }
+
     u32 idxOffset = 0;
     u32 idxCount = 0;
-    u32 vtxOffset = 0;
-    u32 vtxCount = 0;
-    u32 unk_1 = 0;
+    i32 vtxOffset = 0;
+    u32 instanceCount = 1;
+    u32 firstInstance = 0;
   };
 
 public:
   VertexRenderSparse() = default;
   ~VertexRenderSparse() = default;
 
+  // Mark the vertex render object as indirect draw.
+  //
+  // NOTE: The function may called AllocateChunks().
   void AllocVertexSparse(
-    bool useChunks,
+    bool useChunk,
     Heap *heap,
-    u32 maxChunkCount);
+    u32 chunkCapacity);
+
+  // A render chunk represents an indirect subcommand. useChunks must be set
+  // with AllocVertexSparse() before use this function.
+  //
+  // When useChunks == true, the VertexRender(Sparse) will lead to a
+  // vkCmdDrawIndexedIndirect() call instead of a vkCmdDrawIndexed() call.
+  void AddRenderChunk(
+    u32 idxOffset,
+    u32 idxCount,
+    i32 vtxOffset);
+
+  // Clear all cached subcommands.
+  void ClearRenderChunk();
 
 protected:
   Heap *m_heap = nullptr;

@@ -9,10 +9,4 @@ using ShaderProgram = void *;
 class ResourceManager { };
 META_DECLARE_CLASS(ResourceManager)
 
-class AvatarBarn { };
-META_DECLARE_CLASS(AvatarBarn)
-
-class Avatar { };
-META_DECLARE_CLASS(Avatar)
-
 #endif
