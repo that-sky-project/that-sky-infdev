@@ -7,6 +7,7 @@
 #include "sky/skyGfx.hpp"
 #include "sky/skyScene.hpp"
 #include "sky/skyMaterialDefBarn.hpp"
+#include "sky/skyCollisionGeo.hpp"
 #include "sky/skyTypePlaceholders.hpp"
 #include "sky/skyAvatarBarn.hpp"
 #include "render/vertexArrayElements.hpp"
@@ -166,7 +167,11 @@ void HeightMapChunkBarn::ms_ChunkUpdateThread(
 
 // Initialize the object.
 META_REGISTER_FUNCTION_MEMBER(HeightMapChunkBarn, Initialize)
-void HeightMapChunkBarn::Initialize() {
+void HeightMapChunkBarn::Initialize(
+  CollisionGeoBarn *collisionGeoBarn
+) {
+  m_collisionGeoBarn = collisionGeoBarn;
+
   // Create Heap object.
   m_heightMapVertexHeap = new Heap();
   m_heightMapVertexHeap->Initialize(
@@ -281,7 +286,7 @@ void HeightMapChunkBarn::Update(
     return;
 
   ChunkPos avatarChunkPos = {
-    (i32)floorf(avatar->GetTransform()[3][0] / 16.0f), 
+    (i32)floorf(avatar->GetTransform()[3][0] / 16.0f),
     (i32)floorf(avatar->GetTransform()[3][2] / 16.0f)
   };
 

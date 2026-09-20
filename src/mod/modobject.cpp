@@ -6,28 +6,6 @@
 META_REGISTER_CLASS(Mod, MetaClassImpl<Module>::Must_call_META_REGISTER_CLASS)
 
 META_REGISTER_FUNCTION_MEMBER(Mod, Initialize)
-META_REGISTER_FUNCTION_MEMBER(Mod, Terminate)
-META_REGISTER_FUNCTION_MEMBER(Mod, OnLevelLoadEarly)
-META_REGISTER_FUNCTION_MEMBER(Mod, OnLevelLoad)
-META_REGISTER_FUNCTION_MEMBER(Mod, OnLevelLoadLate)
-META_REGISTER_FUNCTION_MEMBER(Mod, OnLevelUnload)
-META_REGISTER_FUNCTION_MEMBER(Mod, OnLevelUnloadLate)
-META_REGISTER_FUNCTION_MEMBER(Mod, HotLoad)
-META_REGISTER_FUNCTION_MEMBER(Mod, HotUnload)
-META_REGISTER_FUNCTION_MEMBER(Mod, Resize)
-META_REGISTER_FUNCTION_MEMBER(Mod, Update)
-META_REGISTER_FUNCTION_MEMBER(Mod, UpdateLate)
-META_REGISTER_FUNCTION_MEMBER(Mod, UpdateBackground)
-META_REGISTER_FUNCTION_MEMBER(Mod, BuildScene)
-META_REGISTER_FUNCTION_MEMBER(Mod, RenderFlush)
-META_REGISTER_FUNCTION_MEMBER(Mod, PostRender)
-META_REGISTER_FUNCTION_MEMBER(Mod, OnPause)
-META_REGISTER_FUNCTION_MEMBER(Mod, OnUnpause)
-META_REGISTER_FUNCTION_MEMBER(Mod, OnSuspend)
-META_REGISTER_FUNCTION_MEMBER(Mod, OnEvent)
-
-META_DATA_MEMBER_FUNCTION(Mod, OnLevelLoad, ArgName, "levelName")
-
 void Mod::Initialize(
   Game *game
 ) {
@@ -40,9 +18,11 @@ void Mod::Initialize(
   m_renderTest->Initialize(game);
 
   m_chunks = new HeightMapChunkBarn();
-  m_chunks->Initialize();
+  m_chunks->Initialize(
+    m_game->resolveMember<CollisionGeoBarn *>("collisionGeoBarn"));
 }
 
+META_REGISTER_FUNCTION_MEMBER(Mod, Terminate)
 void Mod::Terminate() {
   m_chunks->Terminate();
   delete m_chunks;
@@ -54,12 +34,15 @@ void Mod::Terminate() {
   delete m_moduleBarnExt;
 }
 
+META_REGISTER_FUNCTION_MEMBER(Mod, OnLevelLoadEarly)
 void Mod::OnLevelLoadEarly() { }
 
+META_REGISTER_FUNCTION_MEMBER(Mod, OnLevelLoad)
+META_DATA_MEMBER_FUNCTION(Mod, OnLevelLoad, ArgName, "levelName")
 void Mod::OnLevelLoad(
   cstring levelName
 ) {
-  HTTellText("Mod::OnLevelLoad(%s)", levelName);
+  HTTellText("[ThatSkyInfDev] Mod::OnLevelLoad(%s)", levelName);
   m_chunks->OnLevelLoad(
     m_game,
     m_game->resolveMember<ResourceManager *>("resources"),
@@ -69,18 +52,29 @@ void Mod::OnLevelLoad(
   );
 }
 
+META_REGISTER_FUNCTION_MEMBER(Mod, OnLevelLoadLate)
 void Mod::OnLevelLoadLate() { }
 
+META_REGISTER_FUNCTION_MEMBER(Mod, OnLevelUnload)
 void Mod::OnLevelUnload() {
   m_chunks->OnLevelUnload(
     m_game->resolveMember<cstring>("levelName")
   );
 }
+
+META_REGISTER_FUNCTION_MEMBER(Mod, OnLevelUnloadLate)
 void Mod::OnLevelUnloadLate() { }
+
+META_REGISTER_FUNCTION_MEMBER(Mod, HotLoad)
 void Mod::HotLoad() { }
+
+META_REGISTER_FUNCTION_MEMBER(Mod, HotUnload)
 void Mod::HotUnload() { }
+
+META_REGISTER_FUNCTION_MEMBER(Mod, Resize)
 void Mod::Resize() { }
 
+META_REGISTER_FUNCTION_MEMBER(Mod, Update)
 void Mod::Update() {
   //HTTellText("Mod::Update(%p)", m_game);
   m_renderTest->Update();
@@ -91,18 +85,33 @@ void Mod::Update() {
   );
 }
 
+META_REGISTER_FUNCTION_MEMBER(Mod, UpdateLate)
 void Mod::UpdateLate() { }
+
+META_REGISTER_FUNCTION_MEMBER(Mod, UpdateBackground)
 void Mod::UpdateBackground() { }
 
+META_REGISTER_FUNCTION_MEMBER(Mod, BuildScene)
 void Mod::BuildScene() {
   m_chunks->BuildScene(
     m_game->resolveMember<cstring>("levelName")
   );
 }
 
+META_REGISTER_FUNCTION_MEMBER(Mod, RenderFlush)
 void Mod::RenderFlush() { }
+
+META_REGISTER_FUNCTION_MEMBER(Mod, PostRender)
 void Mod::PostRender() { }
+
+META_REGISTER_FUNCTION_MEMBER(Mod, OnPause)
 void Mod::OnPause() { }
+
+META_REGISTER_FUNCTION_MEMBER(Mod, OnUnpause)
 void Mod::OnUnpause() { }
+
+META_REGISTER_FUNCTION_MEMBER(Mod, OnSuspend)
 void Mod::OnSuspend() { }
+
+META_REGISTER_FUNCTION_MEMBER(Mod, OnEvent)
 void Mod::OnEvent() { }

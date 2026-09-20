@@ -12,6 +12,8 @@
 #include "sky/skyGame.hpp"
 #include "sky/skyVertex.hpp"
 #include "sky/skyAvatarBarn.hpp"
+#include "render/vertexArrayElements.hpp"
+#include "sky/skyCollisionGeo.hpp"
 #include "sky/skyTypePlaceholders.hpp"
 #include "world/synth/perlinNoise.hpp"
 
@@ -96,11 +98,20 @@ private:
     VertexRenderSparse render = {};
   };
 
-  struct RenderChunk {
+  /*struct RenderChunk {
+    bool used = false;
     ChunkPos pos = {};
     u32 vtxOffset = 0;
-    bool isDirty = true;
+    TerrainDepthVertex *v1 = nullptr;
+    TerrainMaterialVertex *v2 = nullptr;
   };
+
+  struct CollisionChunk {
+    bool used = false;
+    ChunkPos pos = {};
+    u32 geoIndex = 0;
+    CollisionGeoInstance *geoInstance = nullptr;
+  };*/
 
 private:
   static void ms_ChunkUpdateThread(HeightMapChunkBarn *heightMapChunkBarn);
@@ -109,7 +120,7 @@ public:
   HeightMapChunkBarn(): m_chunkSource(new HeightMapChunkSource()) { }
   ~HeightMapChunkBarn() { delete m_chunkSource; }
 
-  void Initialize();
+  void Initialize(CollisionGeoBarn *collisionGeoBarn);
   void Terminate();
   void OnLevelLoad(
     Game *game,
@@ -148,11 +159,12 @@ private:
 
   std::unordered_set<ChunkPos> m_queuedChunks = {};
   std::unordered_map<ChunkPos, const HeightMapChunk *> m_loadedChunks = {};
+  //std::unordered_map<ChunkPos, CollisionChunk> m_collisionChunks = {};
 
-  u32 m_renderChunkCount = 0;
-  RenderChunk *m_renderChunks = nullptr;
+  //RenderChunk *m_renderChunks = nullptr;
 
   Heap *m_heightMapVertexHeap = nullptr;
+  CollisionGeoBarn *m_collisionGeoBarn = nullptr;
   RenderData m_depth = {};
   RenderData m_mats = {};
 };
