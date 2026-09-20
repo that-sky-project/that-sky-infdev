@@ -1,9 +1,14 @@
 #include <Utils/Types.h>
 #include <Base/Meta.hpp>
+#include "utils/rva.hpp"
 #include "sky/skyPrivate.hpp"
 #include "sky/skyVectorMath.hpp"
 #include "sky/skyAvatarBarn.hpp"
 #include "sky/skyMetaHelper.hpp"
+
+// ----------------------------------------------------------------------------
+// [SECTION] Avatar
+// ----------------------------------------------------------------------------
 
 META_REGISTER_CLASS(Avatar)
 
@@ -20,6 +25,20 @@ Matrix4 Avatar::GetTransform() {
 
   return (this->*p)();
 }
+
+void Avatar::Teleport(
+  const Vector3 &pos,
+  bool isCenter
+) {
+  using PFN = void (*)(Avatar *, const Vector3 &, bool);
+  static const Rva s_Avatar_Teleport = 0x014C0860;
+  return ((PFN)s_Avatar_Teleport())(
+    this, pos, isCenter);
+}
+
+// ----------------------------------------------------------------------------
+// [SECTION] AvatarBarn
+// ----------------------------------------------------------------------------
 
 META_REGISTER_CLASS(AvatarBarn)
 

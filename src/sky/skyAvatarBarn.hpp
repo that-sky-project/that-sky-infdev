@@ -18,6 +18,7 @@ public:
 
 public:
   Matrix4 GetTransform();
+  void Teleport(const Vector3 &pos, bool isCenter);
 
 private:
   __m128 _align = {};

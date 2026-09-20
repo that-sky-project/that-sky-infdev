@@ -37,6 +37,7 @@ struct ChunkPos {
   { }
 
   bool operator==(const ChunkPos &that) const { return x == that.x && z == that.z; }
+  bool operator!=(const ChunkPos &that) const { return !(that == *this); }
 
   i32 x = 0;
   i32 z = 0;
