@@ -6,6 +6,7 @@
 #include "sky/skyVertex.hpp"
 #include "sky/skyScene.hpp"
 #include "sky/skyMaterialDefBarn.hpp"
+#include "sky/skyCollisionGeo.hpp"
 
 class RenderTest {
 public:
@@ -22,9 +23,11 @@ public:
 private:
   void m_InitializeTerrain();
   void m_InitializeEndPortal();
+  void m_InitializeCollision();
 
   void m_TerminateTerrain();
   void m_TerminateEndPortal();
+  void m_TerminateCollision();
 
   void m_UpdateTerrain();
   void m_UpdateEndPortal();
@@ -34,6 +37,7 @@ private:
   ResourceManager *resourceManager = nullptr;
   Heap *heap = nullptr;
   MaterialDefBarn *materialDefBarn = nullptr;
+  CollisionGeoBarn *collisionGeoBarn = nullptr;
 
   VertexRender depthR;
   VertexRender matR;
@@ -46,7 +50,8 @@ private:
   void *depthVtxBuffer = nullptr;
   void *matVtxBuffer = nullptr;
 
-  //std::vector<TerrainRenderChunk *> chunks = {};
+  u32 geoIndex = 0;
+  CollisionGeoInstance *geoInst = nullptr;
 };
 
 #endif

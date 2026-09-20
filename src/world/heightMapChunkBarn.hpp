@@ -12,6 +12,9 @@
 #include "sky/skyGame.hpp"
 #include "sky/skyVertex.hpp"
 #include "sky/skyAvatarBarn.hpp"
+#include "sky/skyVectorMath.hpp"
+#include "render/vertexArrayElements.hpp"
+#include "sky/skyCollisionGeo.hpp"
 #include "sky/skyTypePlaceholders.hpp"
 #include "world/synth/perlinNoise.hpp"
 
@@ -96,10 +99,39 @@ private:
     VertexRenderSparse render = {};
   };
 
-  struct RenderChunk {
-    ChunkPos pos = {};
-    u32 vtxOffset = 0;
-    bool isDirty = true;
+  struct ClientChunk {
+    void Initialize(Heap *heap, CollisionGeoBarn *collisionGeoBarn, const ChunkPos &pos);
+    void Terminate();
+
+    void BuildMesh();
+
+    void BuildCollision();
+    void RemoveCollision();
+
+    inline bool HasMesh() const { return m_hasBuiltMesh; }
+    inline const ChunkPos &GetPos() const { return m_data.GetPos(); }
+
+    // Contexts.
+    Heap *m_heap = nullptr;
+    CollisionGeoBarn *m_collisionGeoBarn = nullptr;
+
+    // Height map data.
+    HeightMapChunk m_data = {};
+
+    // Flags.
+    bool m_hasLoaded = false;
+    bool m_hasBuiltMesh = false;
+    bool m_hasBuiltGeo = false;
+
+    // Vertex buffers.
+    TerrainDepthVertex *m_dvtx = nullptr;
+    TerrainMaterialVertex *m_mvtx = nullptr;
+
+    // CollisionGeo data.
+    Vector4 m_min = {};
+    Vector4 m_max = {};
+    u32 m_geoIdx = 0;
+    CollisionGeoInstance *m_geoInst = nullptr;
   };
 
 private:
@@ -109,7 +141,7 @@ public:
   HeightMapChunkBarn(): m_chunkSource(new HeightMapChunkSource()) { }
   ~HeightMapChunkBarn() { delete m_chunkSource; }
 
-  void Initialize();
+  void Initialize(CollisionGeoBarn *collisionGeoBarn);
   void Terminate();
   void OnLevelLoad(
     Game *game,
@@ -129,30 +161,26 @@ public:
   //HeightMapChunkSourceParams *CreateParams(MetaClass *mc);
 
 private:
-  bool m_IsChunkQueued(const ChunkPos &pos);
-  void m_QueueChunk(const ChunkPos &pos);
-  void m_DequeueChunk(const ChunkPos &pos);
+  void m_AddClientChunk(const ChunkPos &pos);
+  void m_RemoveClientChunk(const ChunkPos &pos);
+  void m_ClearClientChunk();
+  bool m_IsClientChunkAdded(const ChunkPos &pos);
 
-  bool m_IsChunkLoaded(const ChunkPos &pos);
-  void m_LoadChunk(const HeightMapChunk *chunk);
-  void m_UnloadChunk(const ChunkPos &pos);
+  void m_BuildClientChunkMesh(ClientChunk *chunk);
 
 private:
   std::shared_mutex m_lock = {};
   std::thread m_chunkUpdateThread = {};
   bool m_running = false;
   i32 m_seed = 1196250184;
-  u32 m_viewDistance = 1;
+  u32 m_viewDistance = 17;
   HeightMapChunkSource *m_chunkSource = nullptr;
   ChunkPos m_lastPos = {-2147483647, -2147483647};
 
-  std::unordered_set<ChunkPos> m_queuedChunks = {};
-  std::unordered_map<ChunkPos, const HeightMapChunk *> m_loadedChunks = {};
+  std::unordered_map<ChunkPos, ClientChunk> m_clientChunks = {};
 
-  u32 m_renderChunkCount = 0;
-  RenderChunk *m_renderChunks = nullptr;
-
-  Heap *m_heightMapVertexHeap = nullptr;
+  Heap *m_heap = nullptr;
+  CollisionGeoBarn *m_collisionGeoBarn = nullptr;
   RenderData m_depth = {};
   RenderData m_mats = {};
 };

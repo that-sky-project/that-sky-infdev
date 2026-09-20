@@ -99,5 +99,8 @@
     <ClCompile Include="..\..\..\src\sky\functions\skyAvatarBarn.cpp">
       <Filter>src\sky\functions</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\sky\functions\skyCollisionGeo.cpp">
+      <Filter>src\sky\functions</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -5,57 +5,13 @@
 #include <Memory/Heap.hpp>
 #include "utils/htmodloader.hpp"
 #include "render/renderTest.hpp"
+#include "render/vertexArrayElements.hpp"
 #include "sky/skyGame.hpp"
 #include "sky/skyScene.hpp"
 #include "sky/skyMaterialDefBarn.hpp"
 #include "sky/skyMetaHelper.hpp"
 #include "mod/base/override.hpp"
 #include "mod/scriptEngine/luacall.hpp"
-
-typedef void (*PFN_NetModule_Initialize)(
-  void *, void *, void *, Game *, void *, void *);
-typedef void (*PFN_NetModule_Update)(
-  void *, Game *, void *, void *, void *, void *);
-
-struct GrassShVertex {
-  static constexpr u32 kNumAttrs = 5;
-  static constexpr GfxType kTypes[kNumAttrs] = {kGfxType_FLOAT3, kGfxType_BYTE4, kGfxType_UBYTE4, kGfxType_UBYTE4, kGfxType_UBYTE4};
-  static constexpr GfxAttr kAttrs[kNumAttrs] = {kGfxAttr_Position, kGfxAttr_Normal, kGfxAttr_Light0, kGfxAttr_Light1, kGfxAttr_Light2};
-
-  GrassShVertex(
-    f32 x,
-    f32 y,
-    f32 z
-  ) {
-    a_position[0] = x;
-    a_position[1] = y;
-    a_position[2] = z;
-  }
-
-  f32 a_position[3] = {0};
-  u32 a_normal = 0x000000FF;
-  u32 a_light0 = 0x0FF0F0F0;
-  u32 a_light1 = 0x7F7F7F7F;
-  u32 a_light2 = 0x66666666;
-};
-
-struct TerrainDepthVertex {
-  static constexpr u32 kNumAttrs = 1;
-  static constexpr GfxType kTypes[kNumAttrs] = {kGfxType_FLOAT3};
-  static constexpr GfxAttr kAttrs[kNumAttrs] = {kGfxAttr_Position};
-
-  TerrainDepthVertex(
-    f32 x,
-    f32 y,
-    f32 z
-  ) {
-    a_position[0] = x;
-    a_position[1] = y;
-    a_position[2] = z;
-  }
-
-  f32 a_position[3] = {0};
-};
 
 static const TerrainDepthVertex sVerticesT[3] = {{0, 1, 0}, {0, 1, 100}, {100, 1, 100}};
 static const GrassShVertex sVerticesG[3] = {{0, 1, 0}, {0, 1, 100}, {100, 1, 100}};
@@ -92,6 +48,7 @@ void RenderTest::Initialize(
   resourceManager = game->resolveMember<ResourceManager *>("resources");
   heap = game->resolveMember<Heap *>("levelHeap");
   scene = game->resolveMember<Scene *>("scene");
+  collisionGeoBarn = game->resolveMember<CollisionGeoBarn *>("collisionGeoBarn");
 
   HTTellText("§c[ThatSkyInfdev] game.materialDefBarn = %p", materialDefBarn);
   HTTellText("§c[ThatSkyInfdev] game.resourceManager = %p", resourceManager);
@@ -100,11 +57,13 @@ void RenderTest::Initialize(
 
   m_InitializeTerrain();
   m_InitializeEndPortal();
+  m_InitializeCollision();
 }
 
 void RenderTest::Terminate() {
   m_TerminateTerrain();
   m_TerminateEndPortal();
+  m_TerminateCollision();
 }
 
 void RenderTest::Update() {
@@ -162,12 +121,51 @@ void RenderTest::m_InitializeEndPortal() {
 
   endportalR.Initialize(&endportalD, resourceManager, "EndPortal", rl, 0, nullptr);
   endportalR.SetPrimitiveCapacity(0x6);
-  //endportalR.AllocVertexSparse(0, nullptr, 0x400);
 
   MaterialDefBarn::SetMaterialShaderUniforms(
     endportalR.GetPipelineInstance(),
     materialDefBarn->GetDef(kMaterial_None),
     resourceManager);
+}
+
+void RenderTest::m_InitializeCollision() {
+  static const TerrainDepthVertex s_vertexData[4] = {{0, 1, 0}, {0, 1, 10}, {10, 1, 10}, {10, 1, 0}};
+  static const u16 s_indexData[6] = {0, 1, 2, 2, 3, 0};
+  static Material s_mtrlData[4] = {kMaterial_Cliff, kMaterial_Cliff, kMaterial_Cliff, kMaterial_Cliff};
+  static u32 s_colorData = 0xFFFFFFFF;
+  static u32 s_lightData = 0xFFFFFFFF;
+
+  Matrix4 transform = Matrix4(1);
+
+  CollisionGeoMeshData meshData;
+  meshData.tag = "Test";
+  meshData.idxBuffer = s_indexData;
+  meshData.idxCount = 6;
+  meshData.idxStride = sizeof(u16);
+  meshData.vtxBuffer = s_vertexData;
+  meshData.vtxCount = 4;
+  meshData.vtxStride = sizeof(TerrainDepthVertex);
+  meshData.min = Vector4(-0.1f, 0.9f, -0.1f, 0);
+  meshData.max = Vector4(10.1f, 1.1f, 10.1f, 0);
+  geoIndex = collisionGeoBarn->AddGeo(meshData);
+
+  HTTellText("§c[ThatSkyInfdev] geoindex = %d", geoIndex);
+
+  CollisionGeoInstanceData instData;
+  instData.mtrlData = s_mtrlData;
+  instData.mtrlType = kGfxType_UBYTE;
+  instData.mtrlStride = 0;//sizeof(Material);
+  instData.colorData = &s_colorData;
+  instData.colorType = kGfxType_UBYTE4;
+  instData.colorStride = 0;
+  /*instData.lightData = &s_lightData;
+  instData.lightType = kGfxType_UBYTE4;
+  instData.lightStride = 0;*/
+  instData.mask = 0x40;
+  instData.unk_1 = 1000.0f;
+  geoInst = collisionGeoBarn->AddInstance(geoIndex, transform, instData, nullptr);
+
+  HTTellText("§c[ThatSkyInfdev] geoInst = %p", geoInst);
 }
 
 void RenderTest::m_TerminateTerrain() {
@@ -190,6 +188,14 @@ void RenderTest::m_TerminateEndPortal() {
 
   //endportalR.Terminate();
   endportalD.Release();
+}
+
+void RenderTest::m_TerminateCollision() {
+  collisionGeoBarn->RemoveInstance(geoInst);
+  collisionGeoBarn->RemoveGeo(geoIndex);
+
+  geoInst = nullptr;
+  geoIndex = 0;
 }
 
 void RenderTest::m_UpdateTerrain() {

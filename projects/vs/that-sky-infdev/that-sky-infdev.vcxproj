@@ -110,6 +110,7 @@
     <ClCompile Include="..\..\..\src\mod\scriptEngine\luacall.cpp" />
     <ClCompile Include="..\..\..\src\render\renderTest.cpp" />
     <ClCompile Include="..\..\..\src\sky\functions\skyAvatarBarn.cpp" />
+    <ClCompile Include="..\..\..\src\sky\functions\skyCollisionGeo.cpp" />
     <ClCompile Include="..\..\..\src\sky\functions\skyGame.cpp" />
     <ClCompile Include="..\..\..\src\sky\functions\skyGpuBuffer.cpp" />
     <ClCompile Include="..\..\..\src\sky\functions\skyMaterialDefBarn.cpp" />
