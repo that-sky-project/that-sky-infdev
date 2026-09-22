@@ -6,12 +6,13 @@
 #include <Memory/Heap.hpp>
 #include "sky/skyGfx.hpp"
 #include "sky/skyScene.hpp"
-#include "sky/skyMaterialDefBarn.hpp"
-#include "sky/skyCollisionGeo.hpp"
-#include "sky/skyTypePlaceholders.hpp"
 #include "sky/skyAvatarBarn.hpp"
-#include "render/vertexArrayElements.hpp"
+#include "sky/skyCollisionGeo.hpp"
+#include "sky/skyMaterialDefBarn.hpp"
+#include "sky/skyTypePlaceholders.hpp"
+#include "world/synth/perlinNoise.hpp"
 #include "world/heightMapChunkBarn.hpp"
+#include "render/vertexArrayElements.hpp"
 
 HEAP_TAG_REGISTER(tag_HeightMapChunk)
 
@@ -34,15 +35,15 @@ void HeightMapChunkSource::Terminate() {
 void HeightMapChunkSource::LoadChunk(
   HeightMapChunk *chunk
 ) {
-  f32 heights[17][17];
+  f32 heights[HeightMapChunk::kDataSize][HeightMapChunk::kDataSize];
   m_noise->GetRegion(
     (f32 *)heights,
-    chunk->GetPos().x * 16,
-    chunk->GetPos().z * 16,
-    17, 17,
+    chunk->GetPos().x * HeightMapChunk::kTileSize - 1,
+    chunk->GetPos().z * HeightMapChunk::kTileSize - 1,
+    HeightMapChunk::kDataSize, HeightMapChunk::kDataSize,
     1368.824f, 1368.824f);
-  for (u32 z = 0; z < 17; z++) {
-    for (u32 x = 0; x < 17; x++) {
+  for (u32 z = 0; z < 19; z++) {
+    for (u32 x = 0; x < 19; x++) {
       heights[x][z] *= 1e-4f;
       heights[x][z] += 2.0f;
     }
@@ -56,9 +57,9 @@ void HeightMapChunkSource::LoadChunk(
 
 static void s_BuildIndices(
   u16 *dst,
-  u16 chunkSideVtxCount
+  u16 side,
+  u16 cover
 ) {
-  u16 chunkSideFaceCount = chunkSideVtxCount - 1;
   // Vertices and indices (x-major order):
   //       (x)      (x+1)
   // (z)    v0 ------ v1
@@ -68,13 +69,13 @@ static void s_BuildIndices(
   // (z+1)  v2 ------ v3
   //
   // TODO: Optimize with SIMD.
-  for (u32 z = 0; z < chunkSideFaceCount; z++) {
-    for (u32 x = 0; x < chunkSideFaceCount; x++) {
-      u32 quadIdx = z * chunkSideFaceCount + x;
+  for (u32 z = 0; z < cover; z++) {
+    for (u32 x = 0; x < cover; x++) {
+      u32 quadIdx = z * cover + x;
       u32 baseIdx = quadIdx * 6;
 
-      u32 v0 = x * chunkSideVtxCount + z;
-      u32 v1 = v0 + chunkSideVtxCount;
+      u32 v0 = x * side + z;
+      u32 v1 = v0 + side;
       u32 v2 = v0 + 1;
       u32 v3 = v1 + 1;
 
@@ -109,7 +110,7 @@ void HeightMapChunkBarn::RenderData::Initialize(
     tag_HeightMapChunk,
     alignof(u16));
   
-  s_BuildIndices(indices, 17);
+  s_BuildIndices(indices, 17, 16);
 
   data.AddIndexBuffer(0, kGfxType_SHORT, kGfxBind_UploadSingle, kChunkIdxCount, indices);
   data.AddVertexBuffer(0, types, attrs, attrCount, kGfxBind_UploadTriple, 0, nullptr);
@@ -140,13 +141,14 @@ void HeightMapChunkBarn::ClientChunk::Initialize(
   CollisionGeoBarn *collisionGeoBarn,
   const ChunkPos &pos
 ) {
-  m_mvtx = (TerrainMaterialVertex *)heap->Allocate(
-    sizeof(TerrainMaterialVertex) * kChunkVtxCount,
+  // Allocate collision vertices.
+  m_dvtx = (TerrainDepthVertex *)heap->Allocate(
+    sizeof(TerrainDepthVertex) * kChunkVtxCount,
     tag_HeightMapChunk,
     0x10);
 
-  m_dvtx = (TerrainDepthVertex *)heap->Allocate(
-    sizeof(TerrainDepthVertex) * kChunkVtxCount,
+  m_mvtx = (TerrainMaterialVertex *)heap->Allocate(
+    sizeof(TerrainMaterialVertex) * kChunkVtxCount,
     tag_HeightMapChunk,
     0x10);
 
@@ -181,29 +183,26 @@ void HeightMapChunkBarn::ClientChunk::BuildMesh() {
   const f32 *heights = m_data.GetHeights();
 
   // Generate vertices with positions and normals.
-  for (u32 z = 0; z < 17; ++z) {
-    for (u32 x = 0; x < 17; ++x) {
-      // Note: GetRegion stores data in x-major order: buffer[x * zSize + z]
-      u32 idx = x * 17 + z;
-      f32 height = heights[idx];
+  for (u32 z = 0; z < HeightMapChunk::kRealSize; z++) {
+    for (u32 x = 0; x < HeightMapChunk::kRealSize; x++) {
+      // NOTE: chunksource.GetRegion() stores data in x-major order:
+      //       buffer[x * zSize + z].
+      u32 idx = x * HeightMapChunk::kRealSize + z;
+      f32 height = m_data.Index(x, z);
 
       // World position.
       f32 worldX = chunkPos.x * 16.0f + x;
       f32 worldZ = chunkPos.z * 16.0f + z;
-
-      // Collect the AABB of the chunk.
-      m_min = Vector4::minval(m_min, Vector4(worldX, height, worldZ, 0));
-      m_max = Vector4::maxval(m_max, Vector4(worldX, height, worldZ, 0));
 
       GrassShVertex vtx = {worldX, height, worldZ};
       TerrainDepthVertex vtx2 = {worldX, height, worldZ};
 
       // Calculate normal using neighboring heights.
       // Data is stored in x-major order: heights[x * 17 + z]
-      f32 hL = (x > 0)  ? heights[(x - 1) * 17 + z] : height;
-      f32 hR = (x < 16) ? heights[(x + 1) * 17 + z] : height;
-      f32 hD = (z > 0)  ? heights[x * 17 + (z - 1)] : height;
-      f32 hU = (z < 16) ? heights[x * 17 + (z + 1)] : height;
+      f32 hL = m_data.Index((i32)x - 1, (i32)z);
+      f32 hR = m_data.Index((i32)x + 1, (i32)z);
+      f32 hD = m_data.Index((i32)x, (i32)z - 1);
+      f32 hU = m_data.Index((i32)x, (i32)z + 1);
 
       // Tangent vectors.
       f32 tx = 2.0f, ty = hR - hL, tz = 0.0f;
@@ -249,27 +248,58 @@ void HeightMapChunkBarn::ClientChunk::BuildCollision() {
 
   Matrix4 transform = Matrix4(1);
   Material material = kMaterial_Grass;
+  u32 light = 0x00000000;
 
   CollisionGeoMeshData meshData;
   meshData.tag = "ClientChunk";
 
-  // Prefill indices.
+  // Fill indices.
   // TODO: Cache the unchanged index buffer.
   u16 *indices = (u16 *)m_heap->Allocate(
-    sizeof(u16) * kChunkIdxCount,
+    sizeof(u16) * kCollisionChunkIdxCount,
     tag_HeightMapChunk,
     alignof(u16));
-  
-  s_BuildIndices(indices, 17);
 
+  s_BuildIndices(indices, 18, 17);
+
+  // Set index buffer.
   meshData.idxBuffer = indices;
-  meshData.idxCount = kChunkIdxCount;
+  meshData.idxCount = kCollisionChunkIdxCount;
   meshData.idxStride = sizeof(u16);
 
-  meshData.vtxBuffer = m_dvtx;
-  meshData.vtxCount = kChunkVtxCount;
-  meshData.vtxStride = sizeof(TerrainDepthVertex);
+  // Allocate collision vertices.
+  TerrainMaterialVertex *cvtx = (TerrainMaterialVertex *)m_heap->Allocate(
+    sizeof(TerrainMaterialVertex) * kCollisionChunkVtxCount,
+    tag_HeightMapChunk,
+    0x10);
 
+  // Generate vertices.
+  ChunkPos chunkPos = GetPos();
+  for (u32 z = 0; z < kCollisionChunkSize; z++) {
+    for (u32 x = 0; x < kCollisionChunkSize; x++) {
+      u32 idx = x * kCollisionChunkSize + z;
+      f32 height = m_data.Index(x, z);
+
+      // World position.
+      f32 worldX = chunkPos.x * 16.0f + x;
+      f32 worldZ = chunkPos.z * 16.0f + z;
+
+      // Collect the AABB of the chunk.
+      m_min = Vector4::minval(m_min, Vector4(worldX, height, worldZ, 0));
+      m_max = Vector4::maxval(m_max, Vector4(worldX, height, worldZ, 0));
+
+      TerrainMaterialVertex v = {worldX, height, worldZ};
+
+      cvtx[idx] = v;
+    }
+  }
+
+  // Set vertex buffer.
+  meshData.vtxBuffer = cvtx;
+  meshData.vtxCount = kCollisionChunkVtxCount;
+  meshData.vtxStride = sizeof(TerrainMaterialVertex);
+
+  // Set min/max value of collision.
   meshData.min = m_min - 0.1f;
   meshData.max = m_max + 0.1f;
 
@@ -281,16 +311,29 @@ void HeightMapChunkBarn::ClientChunk::BuildCollision() {
   instData.mtrlType = kGfxType_UBYTE;
   instData.mtrlStride = 0;
 
-  instData.mask = 0x40;
-  instData.unk_1 = 1000.0f;
+  instData.lightData = (u08 *)cvtx + offsetof(TerrainMaterialVertex, a_light0);
+  instData.lightType = kGfxType_UBYTE4;
+  instData.lightStride = sizeof(TerrainMaterialVertex);
+
+  // Mask == 0x10, terrain.
+  // Mask == 0x40, edge-protection will be incorrectly triggered.
+  instData.mask = 0x10;
+  instData.unk_1 = 1.0f;
 
   m_geoInst = m_collisionGeoBarn->AddInstance(m_geoIdx, transform, instData, nullptr);
 
   m_hasBuiltGeo = true;
 
-  HTTellText("BUILD COLLISIONGEO (%d, %d), GEO %d, INST %p", GetPos().x, GetPos().z, m_geoIdx, m_geoInst);
+  HTTellText(
+    "BUILD COLLISIONGEO (%d, %d) (%f, %f, %f) -> (%f, %f, %f), GEO %d, INST %p",
+    GetPos().x, GetPos().z,
+    m_min->x, m_min->y, m_min->z,
+    m_max->x, m_max->y, m_max->z,
+    m_geoIdx,
+    m_geoInst);
 
   m_heap->Free(indices);
+  m_heap->Free(cvtx);
 }
 
 void HeightMapChunkBarn::ClientChunk::RemoveCollision() {
@@ -503,7 +546,7 @@ void HeightMapChunkBarn::Update(
 
       i32 dx = chunk.GetPos().x - avatarChunkPos.x
         , dz = chunk.GetPos().z - avatarChunkPos.z;
-      if (-1 <= dx && dx <= 1 && -1 <= dz && dz < 1)
+      if (-1 <= dx && dx <= 1 && -1 <= dz && dz <= 1)
         chunk.BuildCollision();
       else
         chunk.RemoveCollision();

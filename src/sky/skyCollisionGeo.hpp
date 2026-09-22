@@ -7,6 +7,12 @@
 #include "sky/skyVectorMath.hpp"
 
 struct CollisionGeoInstanceData {
+  inline bool IsValid() const {
+    return (!lightData || (lightType != kGfxType_UNKNOWN && lightStride))
+      && (!colorData || colorType != kGfxType_UNKNOWN)
+      && (!mtrlData || mtrlType != kGfxType_UNKNOWN);
+  }
+
   const void *lightData = nullptr;
   // WARN: Only accepts kGfxType_UBYTE4.
   GfxType lightType = kGfxType_UNKNOWN;
@@ -38,6 +44,8 @@ struct CollisionGeoInstanceData {
 };
 
 struct CollisionGeoMeshData {
+  inline bool IsValid() const { return idxCount && vtxCount && idxBuffer && vtxBuffer && vtxStride; }
+
   cstring tag = nullptr;
 
   u32 idxCount = 0;
