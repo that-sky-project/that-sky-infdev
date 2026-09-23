@@ -15,8 +15,9 @@ jobs:
           submodules: 'recursive'
 
       - name: MSVC Configuration
-        uses: ilammy/msvc-dev-cmd@v1
+        uses: TheMrMilchmann/setup-msvc-dev@v4
         with:
+          arch: 'x64'
           sdk: '10.0.22621.0'
 
       - name: Setup Node.js
@@ -25,9 +26,15 @@ jobs:
           node-version: '20'
 
       - name: Install Vulkan SDK
-        uses: humbletim/install-vulkan-sdk@v1.1.1
+        uses: jakoch/install-vulkan-sdk-action@v1.0.0
         with:
-          version: latest
+          vulkan_version: 1.4.309.0
+          cache: true
+          stripdown: false
+
+      - name: Add Vulkan SDK bin to PATH
+        shell: bash
+        run: echo "$VULKAN_SDK/bin" >> $GITHUB_PATH
 
       - name: Install dependencies
         run: npm install
