@@ -31,8 +31,12 @@ public:
 
   ProxyMetaSystemDataContainer &operator=(const MetaSystemDataContainer &);
 
-  u32 m_count;
-  u32 m_maxClasses;
+  // The number of metaclasses in the game.
+  u32 m_count = 0;
+  // The index of the extended metaclass.
+  u32 m_index = 0;
+  // The maximum number of metaclasses that can be stored after extension.
+  u32 m_maxClasses = 0;
 };
 
 class ProxyMetaSystem {

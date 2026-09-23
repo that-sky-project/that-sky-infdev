@@ -10,6 +10,7 @@ void Mod::Initialize(
   Game *game
 ) {
   m_game = game;
+  m_objectSource = m_game->resolveMember<ObjectSource *>("objectFactory");
 
   m_moduleBarnExt = new ModuleBarnExt();
   m_moduleBarnExt->Initialize(game);
@@ -20,6 +21,9 @@ void Mod::Initialize(
   m_chunks = new HeightMapChunkBarn();
   m_chunks->Initialize(
     m_game->resolveMember<CollisionGeoBarn *>("collisionGeoBarn"));
+
+  Variable creator = { &m_chunks, GetMetaClassByType<HeightMapChunkBarn *>() };
+  m_objectSource->TryAddFactory(creator);
 }
 
 META_REGISTER_FUNCTION_MEMBER(Mod, Terminate)

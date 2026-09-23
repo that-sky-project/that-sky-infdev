@@ -3,6 +3,7 @@
 
 #include <Base/Meta.hpp>
 #include "sky/skyGame.hpp"
+#include "mod/objectSource.hpp"
 #include "mod/moduleBarnExt.hpp"
 #include "render/renderTest.hpp"
 #include "world/heightMapChunkBarn.hpp"
@@ -38,6 +39,7 @@ public:
 
 private:
   Game *m_game = nullptr;
+  ObjectSource *m_objectSource = nullptr;
   ModuleBarnExt *m_moduleBarnExt = nullptr;
   RenderTest *m_renderTest = nullptr;
   HeightMapChunkBarn *m_chunks = nullptr;

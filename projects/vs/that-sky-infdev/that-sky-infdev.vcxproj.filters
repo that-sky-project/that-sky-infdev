@@ -102,5 +102,11 @@
     <ClCompile Include="..\..\..\src\sky\functions\skyCollisionGeo.cpp">
       <Filter>src\sky\functions</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\mod\objectSource.cpp">
+      <Filter>src\mod</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\sky\functions\skyObjectFactory.cpp">
+      <Filter>src\sky\functions</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
