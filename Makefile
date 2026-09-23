@@ -1,6 +1,6 @@
 # Requires GNU Make with a POSIX-compatible shell (Git Bash / MSYS2).
 
-DIST       := dist/Data
+DIST       := dist/assets/Data
 SHADER_SRC := assets/shaders
 SHADER_BIN := $(DIST)/Shaders/Bin
 LEVEL_SRC  := assets/levels/Infdev_INF
@@ -19,8 +19,8 @@ all: level shaders
 level: $(LEVEL_OUT)/Objects.level.bin $(LEVEL_OUT)/BstBaked.meshes $(LEVEL_OUT)/Resources.lua
 
 $(LEVEL_OUT)/Objects.level.bin: \
-		$(LEVEL_SRC)/Infdev_INF.level.json \
 		$(LEVEL_SRC)/Infdev_INF.decl.json \
+		$(LEVEL_SRC)/Infdev_INF.level.json \
 		| $(LEVEL_OUT)
 	node scripts/level.js $^ $@
 
@@ -84,4 +84,4 @@ $(LEVEL_OUT) $(SHADER_BIN):
 # ---------------------------------------------------------------------------
 
 clean:
-	rm -rf $(DIST)
+	rm -rf dist/assets
