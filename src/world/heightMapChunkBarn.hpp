@@ -100,7 +100,6 @@ private:
   static constexpr u32 kCollisionChunkSize = HeightMapChunk::kRealSize + 1;
   static constexpr u32 kCollisionChunkVtxCount = kCollisionChunkSize * kCollisionChunkSize;
   static constexpr u32 kCollisionChunkIdxCount = HeightMapChunk::kRealSize * HeightMapChunk::kRealSize * 6;
-  static constexpr cstring kTestInfdevLevel = "Infdev_INF";
 
   struct RenderData {
     void Initialize(

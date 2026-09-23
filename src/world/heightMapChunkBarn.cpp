@@ -408,7 +408,6 @@ void HeightMapChunkBarn::Initialize(
   );
 
   // Initialize world generator.
-  m_chunkSource->Initialize(m_seed);
   m_running = true;
   m_chunkUpdateThread = std::thread(ms_ChunkUpdateThread, this);
 }
@@ -422,8 +421,6 @@ void HeightMapChunkBarn::Terminate() {
   }
 
   m_ClearClientChunk();
-
-  m_chunkSource->Terminate();
 
   // NOTE: A more stable implementation would be to first take out `m_base` and
   // release it. However, many other objects in Sky (at least in my view) do not
@@ -442,8 +439,15 @@ void HeightMapChunkBarn::OnLevelLoad(
   MaterialDefBarn *materialDefBarn,
   cstring levelName
 ) {
-  if (strcmp(levelName, kTestInfdevLevel))
+  if (!m_hasParams)
     return;
+
+  // Set chunk generator params.
+  m_seed = m_params.seed;
+  m_viewDistance = m_params.viewDistance;
+
+  // Initialize chunk source.
+  m_chunkSource->Initialize(m_seed);
 
   // Initialize renderer.
   m_depth.Initialize(
@@ -480,8 +484,10 @@ META_DATA_MEMBER_FUNCTION(HeightMapChunkBarn, OnLevelUnload, ArgName, "(levelNam
 void HeightMapChunkBarn::OnLevelUnload(
   cstring levelName
 ) {
-  if (strcmp(levelName, kTestInfdevLevel))
+  if (!m_hasParams)
     return;
+
+  m_hasParams = false;
 
   // Deinitialize renderer.
   m_depth.Terminate();
@@ -489,6 +495,9 @@ void HeightMapChunkBarn::OnLevelUnload(
 
   // Remove all client chunks.
   m_ClearClientChunk();
+
+  // Terminate chunk source.
+  m_chunkSource->Terminate();
 }
 
 // Load and unload chunks by the position of local avatar.
@@ -499,7 +508,7 @@ void HeightMapChunkBarn::Update(
   AvatarBarn *avatarBarn,
   cstring levelName
 ) {
-  if (strcmp(levelName, kTestInfdevLevel))
+  if (!m_hasParams)
     return;
 
   Avatar *avatar = avatarBarn->TryGetLocalAvatar(false);
@@ -575,7 +584,7 @@ META_DATA_MEMBER_FUNCTION(HeightMapChunkBarn, BuildScene, ArgName, "(levelName)"
 void HeightMapChunkBarn::BuildScene(
   cstring levelName
 ) {
-  if (strcmp(levelName, kTestInfdevLevel))
+  if (!m_hasParams)
     return;
 
   // Map vertex and index buffers.
@@ -627,6 +636,7 @@ HeightMapChunkSourceParams *HeightMapChunkBarn::CreateParams(
   MetaClass *mc
 ) {
   Assert(!m_hasParams);
+  m_hasParams = true;
   return &m_params;
 }
 
