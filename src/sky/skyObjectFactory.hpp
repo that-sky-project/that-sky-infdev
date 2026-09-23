@@ -9,6 +9,19 @@ class ObjectFactory;
 META_DECLARE_CLASS(ObjectFactory)
 
 class ObjectFactory: public Module {
+private:
+  struct Fmix64Hash {
+    size_t operator()(const MetaClass *mc) const noexcept {
+      uint64_t k = reinterpret_cast<uint64_t>(mc);
+      k ^= k >> 33;
+      k *= 0xFF51AFD7ED558CCDull;
+      k ^= k >> 33;
+      k *= 0xC4CEB9FE1A85EC53ull;
+      k ^= k >> 33;
+      return static_cast<size_t>(k);
+    }
+  };
+
 protected:
   struct Factory {
     Variable creator = {};
@@ -25,7 +38,7 @@ public:
 
 protected:
   Object *m_barnContainer = nullptr;
-  std::unordered_map<LPCMetaClass, ObjectFactory::Factory> m_factoryMap = {};
+  std::unordered_map<LPCMetaClass, ObjectFactory::Factory, ObjectFactory::Fmix64Hash> m_factoryMap = {};
 };
 
 #endif

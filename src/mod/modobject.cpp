@@ -22,7 +22,8 @@ void Mod::Initialize(
   m_chunks->Initialize(
     m_game->resolveMember<CollisionGeoBarn *>("collisionGeoBarn"));
 
-  m_objectSource->TryAddFactory(m_chunks);
+  Variable creator = { &m_chunks, GetMetaClassByType<HeightMapChunkBarn *>() };
+  m_objectSource->TryAddFactory(creator);
 }
 
 META_REGISTER_FUNCTION_MEMBER(Mod, Terminate)

@@ -9,7 +9,7 @@ public:
   ObjectSource() = default;
   ~ObjectSource() = default;
 
-  bool TryAddFactory(Object *creator);
+  bool TryAddFactory(const Variable &creator);
 };
 
 #endif
