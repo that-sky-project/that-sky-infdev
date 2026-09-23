@@ -9,7 +9,7 @@ class ObjectFactory;
 META_DECLARE_CLASS(ObjectFactory)
 
 class ObjectFactory: public Module {
-private:
+protected:
   struct Factory {
     Variable creator = {};
     const MetaMemberFunction *createFun = nullptr;

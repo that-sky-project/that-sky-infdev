@@ -107,6 +107,7 @@
     <ClCompile Include="..\..\..\src\mod\modbasecall.cpp" />
     <ClCompile Include="..\..\..\src\mod\modobject.cpp" />
     <ClCompile Include="..\..\..\src\mod\moduleBarnExt.cpp" />
+    <ClCompile Include="..\..\..\src\mod\objectSource.cpp" />
     <ClCompile Include="..\..\..\src\mod\scriptEngine\luacall.cpp" />
     <ClCompile Include="..\..\..\src\render\renderTest.cpp" />
     <ClCompile Include="..\..\..\src\sky\functions\skyAvatarBarn.cpp" />
@@ -115,6 +116,7 @@
     <ClCompile Include="..\..\..\src\sky\functions\skyGpuBuffer.cpp" />
     <ClCompile Include="..\..\..\src\sky\functions\skyMaterialDefBarn.cpp" />
     <ClCompile Include="..\..\..\src\sky\functions\skyMetaPlaceholders.cpp" />
+    <ClCompile Include="..\..\..\src\sky\functions\skyObjectFactory.cpp" />
     <ClCompile Include="..\..\..\src\sky\functions\skyPrivate.cpp" />
     <ClCompile Include="..\..\..\src\sky\functions\skyRendererUtils.cpp" />
     <ClCompile Include="..\..\..\src\sky\functions\skyRenderList.cpp" />
