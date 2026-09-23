@@ -20,6 +20,22 @@
 #include "render/vertexArrayElements.hpp"
 
 // ----------------------------------------------------------------------------
+// [SECTION] HeightMapChunkSourceParams
+// ----------------------------------------------------------------------------
+
+class HeightMapChunkSourceParams;
+META_DECLARE_CLASS(HeightMapChunkSourceParams)
+
+class HeightMapChunkSourceParams: public Object {
+public:
+  HeightMapChunkSourceParams() { m_metaClassId = MetaClassId(HeightMapChunkSourceParams); }
+  ~HeightMapChunkSourceParams() = default;
+
+  i32 seed = 0;
+  u32 viewDistance = 0;
+};
+
+// ----------------------------------------------------------------------------
 // [SECTION] HeightMapChunk
 // ----------------------------------------------------------------------------
 
@@ -84,7 +100,7 @@ private:
   static constexpr u32 kCollisionChunkSize = HeightMapChunk::kRealSize + 1;
   static constexpr u32 kCollisionChunkVtxCount = kCollisionChunkSize * kCollisionChunkSize;
   static constexpr u32 kCollisionChunkIdxCount = HeightMapChunk::kRealSize * HeightMapChunk::kRealSize * 6;
-  static constexpr cstring kTestInfdevLevel = "CandleSpace";
+  static constexpr cstring kTestInfdevLevel = "Infdev_INF";
 
   struct RenderData {
     void Initialize(
@@ -151,7 +167,7 @@ private:
   static void ms_ChunkUpdateThread(HeightMapChunkBarn *heightMapChunkBarn);
 
 public:
-  HeightMapChunkBarn(): m_chunkSource(new HeightMapChunkSource()) { }
+  HeightMapChunkBarn(): m_chunkSource(new HeightMapChunkSource()) { m_metaClassId = MetaClassId(HeightMapChunkBarn); }
   ~HeightMapChunkBarn() { delete m_chunkSource; }
 
   void Initialize(CollisionGeoBarn *collisionGeoBarn);
@@ -171,7 +187,7 @@ public:
   void BuildScene(
     cstring levelName);
 
-  //HeightMapChunkSourceParams *CreateParams(MetaClass *mc);
+  HeightMapChunkSourceParams *CreateParams(MetaClass *mc);
 
 private:
   void m_AddClientChunk(const ChunkPos &pos);
@@ -188,6 +204,8 @@ private:
   bool m_running = false;
 
   // Configurations.
+  bool m_hasParams = false;
+  HeightMapChunkSourceParams m_params = {};
   i32 m_seed = 1196250184;
   u32 m_viewDistance = 17;
 

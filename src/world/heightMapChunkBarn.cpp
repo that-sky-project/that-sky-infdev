@@ -17,6 +17,21 @@
 HEAP_TAG_REGISTER(tag_HeightMapChunk)
 
 // ----------------------------------------------------------------------------
+// [SECTION] HeightMapChunkSourceParams
+// ----------------------------------------------------------------------------
+
+META_REGISTER_CLASS(HeightMapChunkSourceParams, MetaClassImpl<Object>::Must_call_META_REGISTER_CLASS)
+META_DATA_CLASS(HeightMapChunkSourceParams, Tool_Export, "true")
+META_DATA_CLASS(HeightMapChunkSourceParams, Infdev_LevelExport, "true")
+
+META_REGISTER_SIMPLE_MEMBER(HeightMapChunkSourceParams, seed)
+META_DATA_MEMBER_VARIABLE(HeightMapChunkSourceParams, seed, Tool_DefaultValue, "1196250184")
+
+META_REGISTER_SIMPLE_MEMBER(HeightMapChunkSourceParams, viewDistance)
+META_DATA_MEMBER_VARIABLE(HeightMapChunkSourceParams, viewDistance, Tool_DefaultValue, "17")
+META_DATA_MEMBER_VARIABLE(HeightMapChunkSourceParams, viewDistance, Tool_MinMaxValues, "(4, 20)")
+
+// ----------------------------------------------------------------------------
 // [SECTION] HeightMapChunkSource
 // ----------------------------------------------------------------------------
 
@@ -606,13 +621,14 @@ void HeightMapChunkBarn::BuildScene(
   m_mats.Queue();
 }
 
-//META_REGISTER_FUNCTION_MEMBER(HeightMapChunkBarn, CreateParams)
-//META_DATA_MEMBER_FUNCTION(HeightMapChunkBarn, CreateParams, ObjectFactory_CreatesType, "HeightMapChunkSourceParams")
-//HeightMapChunkSourceParams *HeightMapChunkBarn::CreateParams(
-//  MetaClass *mc
-//) {
-//
-//}
+META_REGISTER_FUNCTION_MEMBER(HeightMapChunkBarn, CreateParams)
+META_DATA_MEMBER_FUNCTION(HeightMapChunkBarn, CreateParams, ObjectFactory_CreatesType, "HeightMapChunkSourceParams")
+HeightMapChunkSourceParams *HeightMapChunkBarn::CreateParams(
+  MetaClass *mc
+) {
+  Assert(!m_hasParams);
+  return &m_params;
+}
 
 void HeightMapChunkBarn::m_AddClientChunk(
   const ChunkPos &pos

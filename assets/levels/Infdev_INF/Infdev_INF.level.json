@@ -1,0 +1,14 @@
+{
+  "classes": {
+    "HeightMapChunkSourceParams": {
+      "seed": "raw>b04",
+      "viewDistance": "raw>b04"
+    }
+  },
+  "objects": {
+    "HeightMapChunkSourceParams>WorldGenParams": {
+      "seed": 1,
+      "viewDistance": 17
+    }
+  }
+}
