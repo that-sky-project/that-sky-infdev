@@ -1,0 +1,63 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: MSVC Configuration
+        uses: TheMrMilchmann/setup-msvc-dev@v4
+        with:
+          arch: 'x64'
+          sdk: '10.0.22621.0'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Vulkan SDK
+        uses: jakoch/install-vulkan-sdk-action@v1.0.0
+        with:
+          vulkan_version: 1.4.309.0
+          cache: true
+          stripdown: false
+
+      - name: Add Vulkan SDK bin to PATH
+        shell: bash
+        run: echo "$VULKAN_SDK/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build that-sky-modbase SDK
+        run: msbuild libraries/that-sky-modbase/that-sky-modbase.sln /p:Configuration=Release /p:Platform=x64 /m
+
+      - name: Build that-sky-infdev
+        run: msbuild projects/vs/that-sky-infdev.sln /p:Configuration=Release /p:Platform=x64 /m
+
+      - name: Build resources
+        shell: bash
+        run: |
+          export PATH="/c/Program Files/Git/usr/bin:$PATH"
+          mingw32-make
+
+      - name: Copy manifest
+        shell: bash
+        run: cp manifest.json dist/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: that-sky-infdev
+          path: dist/
+          if-no-files-found: error

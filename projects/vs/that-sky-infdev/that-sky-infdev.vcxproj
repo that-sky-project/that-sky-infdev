@@ -45,12 +45,12 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>$(ProjectDir)..\..\..\dist\win\</OutDir>
+    <OutDir>$(ProjectDir)..\..\..\dist\</OutDir>
     <IntDir>$(ProjectDir)dist\</IntDir>
     <TargetName>that-sky-infdev</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>$(ProjectDir)..\..\..\dist\win\</OutDir>
+    <OutDir>$(ProjectDir)..\..\..\dist\</OutDir>
     <IntDir>$(ProjectDir)dist\</IntDir>
     <TargetName>that-sky-infdev</TargetName>
   </PropertyGroup>

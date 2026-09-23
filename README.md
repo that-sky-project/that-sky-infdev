@@ -16,3 +16,5 @@ Building this mod requires the following tools to be installed:
 - Open `libraries/that-sky-modbase/that-sky-modbase.sln` with MSVC, and build `that-sky-modbase` SDK.
 - Open `projects/vs/that-sky-infdev.sln` with MSVC, and build `that-sky-infdev.dll`.
 - Run `mingw32-make` in the repository root directory to build the resource files.
+- Copy `manifest.json` to `dist`.
+- Finish! The mod can be copied to the game directly.
