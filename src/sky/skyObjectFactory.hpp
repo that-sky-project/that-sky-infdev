@@ -20,16 +20,8 @@ public:
   ObjectFactory() = default;
   ~ObjectFactory() = default;
 
-  //inline void SetBarnContainer(Object *container) { m_barnContainer = container; }
-
   Object *CreateObject(cstring clazz);
   void ReleaseObject(Object *object);
-
-private:
-  const ObjectFactory::Factory *m_GetFactoryForTypeImpl(
-    LPCMetaClass query,
-    LPCMetaClass initial
-  ) const;
 
 protected:
   Object *m_barnContainer = nullptr;
