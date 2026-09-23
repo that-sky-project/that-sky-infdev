@@ -3,9 +3,10 @@
     "pack": "node ./scripts/pack.js"
   },
   "dependencies": {
-    "tar": "^7.5.22",
+    "@that-sky-project/that-sky-level": "^1.0.2",
     "sldl-headers": "^0.33.7",
+    "sldl-jsonify": "^1.1.0",
     "sldl-objects": "^1.2.7",
-    "sldl-jsonify": "^1.1.0"
+    "tar": "^7.5.22"
   }
 }
