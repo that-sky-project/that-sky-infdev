@@ -1,0 +1,11 @@
+{
+  "scripts": {
+    "pack": "node ./scripts/pack.js"
+  },
+  "dependencies": {
+    "tar": "^7.5.22",
+    "sldl-headers": "^0.33.7",
+    "sldl-objects": "^1.2.7",
+    "sldl-jsonify": "^1.1.0"
+  }
+}

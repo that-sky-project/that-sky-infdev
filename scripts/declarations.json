@@ -1,0 +1,6 @@
+{
+  "C$HeightMapChunkSourceParams": {
+    "seed": "int32_t",
+    "viewDistance": "uint32_t"
+  }
+}
