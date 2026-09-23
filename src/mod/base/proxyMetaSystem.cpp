@@ -1,3 +1,4 @@
+#include "sky/skyPrivate.hpp"
 #include "mod/base/proxyMetaSystem.hpp"
 #include "utils/stringUtils.hpp"
 
@@ -20,7 +21,6 @@ ProxyMetaSystem *ProxyMetaSystem::create(
 ) {
   ProxyMetaSystemDataContainer *pData = new ProxyMetaSystemDataContainer();
   pData->m_maxClasses = maxClasses;
-  pData->m_count = 0;
 
   ProxyMetaSystem *pMetaSystem = (ProxyMetaSystem *)operator new(
     sizeof(ProxyMetaSystem) + sizeof(const MetaClass *) * maxClasses);
@@ -37,12 +37,14 @@ void ProxyMetaSystem::set(
   const MetaSystemExample *p,
   u32 count
 ) {
+  Assert(count);
+
   *m_data = *p->m_data;
 
   // Actually we don't know how many classes we need to copy at compile time.
   memcpy(m_classes, (const void *)p->m_classes, count * sizeof(const MetaClass *));
 
-  m_data->m_count = count;
+  m_data->m_count = m_data->m_index = count;
 }
 
 bool ProxyMetaSystem::submitChain(
@@ -87,13 +89,32 @@ bool ProxyMetaSystem::submitChain(
       continue;
 
     auto mc = (MetaClass *)mt;
-    mc->m_globalId = m_data->m_count++;
+
     if (mc->m_metaDataContainer)
       delete mc->m_metaDataContainer;
     mc->m_metaDataContainer = new MetaDataContainer();
 
-    m_classes[mc->m_globalId] = mc;
+    // The metaclass objects that can be loaded into a level in the game only
+    // exist within the space provided by the game itself, and do not include
+    // extended space. If an extended metaclass declares that it needs to be
+    // loaded by a level, we iterate through all metaclass positions in the game
+    // itself, find an unused empty slot, and replace it.
+    if (mc->GetMetaData("Infdev_LevelExport")) {
+      u32 i = 0;
+      for (; i < m_data->m_count; i++) {
+        if (m_classes[i] != GetMetaClass())
+          continue;
 
+        mc->m_globalId = i;
+        break;
+      }
+
+      AssertMsg(i != m_data->m_count, "MetaClass %s cannot be initialized as level export", mc->GetName());
+    } else {
+      mc->m_globalId = m_data->m_index++;
+    }
+
+    m_classes[mc->m_globalId] = mc;
     m_data->m_metaClasses[mt->GetName()] = mc;
   }
 
