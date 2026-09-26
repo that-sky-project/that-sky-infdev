@@ -1,7 +1,60 @@
 {
   "O$WorldGenParams": {
     "$type": "HeightMapChunkSourceParams",
-    "seed": 1,
+    // 种子和视距
+    "seed": 5201314,
     "viewDistance": 17
+  },
+  "O$InfiniteEnergy": {
+    "$type": "AvatarSetEnergy",
+    "value": 1,
+    "increment": true,
+    "setArmor": false,
+    "setBreath": false,
+    "setEnergy": true,
+    "setEnergyCapMult": false,
+    "continuous": true,
+    "autoStart": true
+  },
+  "O$Titke": {
+    "$type": "DisplayTitleCard",
+    "autoStart": true,
+    "shadow": true,
+    "mainTitle": "「无限」",
+    "subTitle": "我们赋予了光之子们来自「无限」的「自由」。",
+    "forceFirstTime": true,
+    "yOffset": 0
+  },
+  "O$SpawnPoint": {
+    "$type": "Marker",
+    "enabled": true,
+    "scale": {
+      "x": 1,
+      "y": 1,
+      "z": 1
+    },
+    "quat": {
+      "i": 0,
+      "j": 0,
+      "k": 0,
+      "w": 1
+    },
+    "pos": {
+      "x": 0,
+      "y": 25,
+      "z": 0
+    }
+  },
+  "O$Spawn": {
+    "$type": "AvatarSetPos",
+    "autoStart": true,
+    "randomGroundInMarker": false,
+    "setLevelStartPosition": true,
+    "onGround": true,
+    "relMarker": null,
+    "marker": "P$SpawnPoint",
+    "breakHandHold": false,
+    "bstGuid": 2,
+    "killMomentum": false
   }
 }

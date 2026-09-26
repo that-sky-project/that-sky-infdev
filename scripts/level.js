@@ -1,3 +1,4 @@
+const { kLibStdSkyDecl } = require("sldl-headers");
 const { DeclarationGroup, JsonLevelObjects } = require("sldl-jsonify");
 const ps = require("process");
 const fs = require("fs");
@@ -15,7 +16,7 @@ function main(argv) {
   var declRaw = JSON.parse(fs.readFileSync(declPath, "utf-8"))
     , input = JSON.parse(fs.readFileSync(inputPath, "utf-8"));
 
-  var decl = new DeclarationGroup(declRaw).parse()
+  var decl = new DeclarationGroup(Object.assign({}, kLibStdSkyDecl, declRaw)).parse()
     , objWriter = new JsonLevelObjects(decl);
 
   var buffer = objWriter.write(input);
