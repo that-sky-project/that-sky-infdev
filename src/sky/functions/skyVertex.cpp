@@ -40,7 +40,7 @@ void VertexData::Release() {
 
   m_attributeCount = 0;
   m_instanceCapacity = 0;
-  m_active = nullptr;
+  m_debugInfo.active = nullptr;
   m_complete = false;
 }
 
@@ -131,7 +131,7 @@ void VertexData::AddIndexBuffer(
 
 void VertexData::EndDefinition() {
   m_complete = true;
-  m_active = this;
+  m_debugInfo.active = this;
 }
 
 // ----------------------------------------------------------------------------

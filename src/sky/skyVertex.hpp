@@ -10,6 +10,14 @@
 #include "sky/skyRendererUtils.hpp"
 #include "sky/skyTypePlaceholders.hpp"
 
+class VertexData;
+
+struct VertexDebugInfo {
+  VertexDebugInfo *next = nullptr;
+  VertexDebugInfo *prev = nullptr;
+  VertexData *active = nullptr;
+};
+
 class VertexData {
 public:
   static constexpr u32 kMaxVertexBuffers = 8;
@@ -151,10 +159,12 @@ private:
   VertexData::UnknownBuffer m_unknown[4];
   // Index buffer contexts.
   VertexData::IndexBuffer m_idxBuffers[kMaxIndexBuffers];
+  // True if EndDefinition() is called.
   bool m_complete = false;
-  AutoLister<VertexData> m_lister = {};
-  // TODO: Active vertex data pointer.
-  VertexData *m_active = nullptr;
+  // A chain list of all VertexData objects.
+  // NOTE: It won't be appended to the original chainlist of the game.
+  //       This may break the game's debug lister.
+  VertexDebugInfo m_debugInfo = {};
   // Name/Identifier.
   const char *m_name = "";
 };

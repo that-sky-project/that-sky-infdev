@@ -183,6 +183,14 @@ enum GfxBind: u08 {
   kGfxBind_UploadFlexible,
 };
 
+enum GfxTextureType: u08 {
+  kGfxTextureType_Undefined = 0x0,
+  kGfxTextureType_2D,
+  kGfxTextureType_3D,
+  kGfxTextureType_Cube,
+  kGfxTextureType_CubeArray,
+};
+
 /*
 // ---- by AI, 0.15.1 texel formats.
 // GPU texel (pixel) formats.
