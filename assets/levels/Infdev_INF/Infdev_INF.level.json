@@ -1,7 +1,6 @@
 {
   "O$WorldGenParams": {
     "$type": "HeightMapChunkSourceParams",
-    // 种子和视距
     "seed": 5201314,
     "viewDistance": 17
   },
