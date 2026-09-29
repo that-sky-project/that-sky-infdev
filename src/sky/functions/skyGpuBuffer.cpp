@@ -78,14 +78,14 @@ void GpuBuffer::Initialize(
     ) {
       m_isSharedWritten = true;
       m_writeCount = 0;
-      m_writableBuffer = -1;
+      m_writableBuffer = Renderer::kInvalidHandle;
       m_isCpuCoherent = GetRenderer()->IsBufferCPUCoherent(m_readableBuffer);
       return;
     }
   }
 
   // Fall back to a plain readable buffer when no shared buffer was produced.
-  if (m_readableBuffer == -1) {
+  if (m_readableBuffer == Renderer::kInvalidHandle) {
     // readCount >= 2 always maps to a triple upload; otherwise mirror usage.
     GfxBind readUsage = (m_readCount >= 2)
       ? kGfxBind_UploadTriple
@@ -108,7 +108,7 @@ void GpuBuffer::Initialize(
       kGfxBind_UploadTriple,
       realSize * m_writeCount);
   } else {
-    m_writableBuffer = -1;
+    m_writableBuffer = Renderer::kInvalidHandle;
   }
 
   if (!data)
@@ -130,16 +130,16 @@ void GpuBuffer::Terminate() {
     UnmapBuffer();
 
   // Release all buffers.
-  if (m_readableBuffer != -1 )
+  if (m_readableBuffer != Renderer::kInvalidHandle)
     GetRenderer()->ReleaseBuffer(m_readableBuffer);
-  if (m_writableBuffer != -1 && !m_isCpuCoherent)
+  if (m_writableBuffer != Renderer::kInvalidHandle && !m_isCpuCoherent)
     GetRenderer()->ReleaseBuffer(m_writableBuffer);
 
   // Reset cached states.
   m_bufferSize = 0;
   m_usage = kGfxBind_Undefined;
   m_type = kGfxBufferType_Undefined;
-  m_readableBuffer = m_writableBuffer = -1;
+  m_readableBuffer = m_writableBuffer = Renderer::kInvalidHandle;
   m_writeCount = m_writeIndex = m_readCount = m_readIndex = 0;
   m_isMapped = m_isSharedWritten = m_isCpuCoherent = false;
 }
@@ -203,18 +203,18 @@ void GpuBuffer::UnmapBuffer() {
   if (m_usage == kGfxBind_UploadSingle) {
     if (!m_isCpuCoherent)
       GetRenderer()->ReleaseBuffer(m_writableBuffer);
-    m_writableBuffer = -1;
+    m_writableBuffer = Renderer::kInvalidHandle;
     m_writeCount = 0;
   }
 }
 
-u32 GpuBuffer::GetTotalMemSize() {
+u32 GpuBuffer::GetTotalMemSize() const {
   u32 readableSize = 0
     , writableSize = 0;
 
-  if (m_readableBuffer >= 1)
+  if (m_readableBuffer != Renderer::kInvalidHandle)
     readableSize = GetRenderer()->GetPaddedBufferSize(m_readableBuffer);
-  if (m_writableBuffer >= 1 && m_writableBuffer != m_readableBuffer)
+  if (m_writableBuffer != Renderer::kInvalidHandle && m_writableBuffer != m_readableBuffer)
     writableSize = GetRenderer()->GetPaddedBufferSize(m_writableBuffer);
 
   return readableSize + writableSize;

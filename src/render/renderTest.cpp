@@ -18,83 +18,79 @@ static const GrassShVertex sVerticesG[3] = {{0, 1, 0}, {0, 1, 100}, {100, 1, 100
 static const u16 sIndicesT[6] = {0, 1, 2, 0, 2, 1};
 static const u16 sIndicesG[6] = {0, 1, 2, 0, 2, 1};
 
-void RenderTest::Initialize(
-  Game *game
+static void s_LuaLoadShader(
+  cstring name
 ) {
-  /*lua_debugdostring(
-    GetOverride()->GetLua(),
-    "local shaders = {\"EndPortal\", \"SimpleColorTest\"}\n"
-    "\n"
-    "for i = 1, #shaders do\n"
-    "  local shaderName = shaders[i]\n"
-    "  if game:resources():GetResource(\"Shader\", shaderName) == nil then\n"
-    "    local res = Shader.new(game:resourceHeap())\n"
-    "    res:name(shaderName)\n"
-    "    res:heap(game:resourceHeap())\n"
-    "\n"
-    "    -- Resource parameters.\n"
-    "    res:group(\"Opaque\")\n"
-    "    res:vs(shaderName .. \".vert\")\n"
-    "    res:fs(shaderName .. \".frag\")\n"
-    "\n"
-    "    res:IncLoadCount()\n"
-    "    res:IncLoadCount()\n"
-    "    game:resources():LoadImmediate(res)\n"
-    "  end\n"
-    "end\n"
-  );*/
-
-  materialDefBarn = game->resolveMember<MaterialDefBarn *>("materialDefBarn");
-  resourceManager = game->resolveMember<ResourceManager *>("resources");
-  heap = game->resolveMember<Heap *>("levelHeap");
-  scene = game->resolveMember<Scene *>("scene");
-  collisionGeoBarn = game->resolveMember<CollisionGeoBarn *>("collisionGeoBarn");
-
-  HTTellText("§c[ThatSkyInfdev] game.materialDefBarn = %p", materialDefBarn);
-  HTTellText("§c[ThatSkyInfdev] game.resourceManager = %p", resourceManager);
-  HTTellText("§c[ThatSkyInfdev] game.levelHeap = %p", heap);
-  HTTellText("§c[ThatSkyInfdev] game.scene = %p", scene);
-
-  m_InitializeTerrain();
-  m_InitializeEndPortal();
-  m_InitializeCollision();
-}
-
-void RenderTest::Terminate() {
-  m_TerminateTerrain();
-  m_TerminateEndPortal();
-  m_TerminateCollision();
-}
-
-void RenderTest::Update() {
-  m_UpdateTerrain();
-  m_UpdateEndPortal();
-}
-
-void RenderTest::m_InitializeTerrain() {
-  ;
-}
-
-void RenderTest::m_InitializeEndPortal() {
-  // Load shader.
-  lua_debugdostring(
-    GetOverride()->GetLua(),
-    "local res = game:resources():GetResource(\"Shader\", \"EndPortal\")\n"
+  static constexpr cstring s_loader = 
+    "local name = \"%s\""
+    "local res = game:resources():GetResource(\"Shader\", name)\n"
     "if res == nil then\n"\
     "  res = Shader.new(game:resourceHeap())"
-    "  res:name(\"EndPortal\")\n"
+    "  res:name(name)\n"
     "  res:heap(game:resourceHeap())\n"
     "\n"
     "  -- Resource parameters.\n"
     "  res:group(\"Opaque\")\n"
-    "  res:vs(\"EndPortal.vert\")\n"
-    "  res:fs(\"EndPortal.frag\")\n"
+    "  res:vs(name .. \".vert\")\n"
+    "  res:fs(name .. \".frag\")\n"
     "\n"
     "  game:resources():LoadImmediate(res)\n"
     "end\n"
     "\n"
-    "res:IncLoadCount()\n"
+    "res:IncLoadCount()\n";
+
+  char script[2048];
+
+  snprintf(script, sizeof(script), s_loader, name);
+  lua_debugdostring(GetOverride()->GetLua(), script);
+}
+
+static void s_LuaUnloadShader(
+  cstring name
+) {
+  static constexpr cstring s_loader =
+    "local res = game:resources():GetResource(\"Shader\", \"%s\")\n"
+    "if res ~= nil then\n"
+    "  res:DecLoadCount()\n"
+    "  if res:GetLoadCount() == 0 then\n"
+    "    game:resources():UnloadImmediate(res)\n"
+    "    Shader.delete(res, game:resourceHeap())\n"
+    "  end\n"
+    "end\n";
+
+  char script[2048];
+
+  snprintf(script, sizeof(script), s_loader, name);
+  lua_debugdostring(GetOverride()->GetLua(), script);
+}
+
+namespace RenderTest {
+
+// ----------------------------------------------------------------------------
+// [SECTION] RenderTest/ShaderTest
+// ----------------------------------------------------------------------------
+
+void ShaderTest::Initialize(
+  Game *game
+) {
+  m_Initialize(
+    game->resolveMember<Scene *>("scene"),
+    game->resolveMember<ResourceManager *>("resources"),
+    game->resolveMember<MaterialDefBarn *>("materialDefBarn"),
+    game->resolveMember<CollisionGeoBarn *>("collisionGeoBarn")
   );
+}
+
+void ShaderTest::m_Initialize(
+  Scene *scene,
+  ResourceManager *resources,
+  MaterialDefBarn *materialDefBarn,
+  CollisionGeoBarn *collisionGeoBarn
+) {
+  m_collisionGeoBarn = collisionGeoBarn;
+
+  // Load shader.
+  s_LuaLoadShader("EndPortal");
 
   const GfxType t[3] = {kGfxType_FLOAT3, kGfxType_FLOAT2, kGfxType_FLOAT4};
   const GfxAttr a[3] = {kGfxAttr_Position, kGfxAttr_TexCoord0, kGfxAttr_Color};
@@ -104,36 +100,28 @@ void RenderTest::m_InitializeEndPortal() {
     4, 5, 6, 6, 7, 4,
   };
 
-  endportalD.BeginDefinition("EndPortalTest", 8);
-  endportalD.AddVertexBuffer(
-    0,
-    t,
-    a,
-    3,
-    kGfxBind_UploadTriple,
-    0,
-    nullptr);
-  endportalD.AddIndexBuffer(
-    0, kGfxType_SHORT, kGfxBind_UploadSingle, 12, indices);
-  endportalD.EndDefinition();
+  m_endportalD.BeginDefinition("EndPortalTest", 8);
+  m_endportalD.AddVertexBuffer(0, t, a, 3, kGfxBind_UploadTriple, 0, nullptr);
+  m_endportalD.AddIndexBuffer(0, kGfxType_SHORT, kGfxBind_UploadSingle, 12, indices);
+  m_endportalD.EndDefinition();
 
   RenderList *rl = scene->GetRenderListByName("Opaque");
 
-  endportalR.Initialize(&endportalD, resourceManager, "EndPortal", rl, 0, nullptr);
-  endportalR.SetPrimitiveCapacity(0x6);
+  m_endportalR.Initialize(&m_endportalD, resources, "EndPortal", rl, 0, nullptr);
+  m_endportalR.SetPrimitiveCapacity(0x6);
 
   MaterialDefBarn::SetMaterialShaderUniforms(
-    endportalR.GetPipelineInstance(),
+    m_endportalR.GetPipelineInstance(),
     materialDefBarn->GetDef(kMaterial_None),
-    resourceManager);
-}
+    resources);
 
-void RenderTest::m_InitializeCollision() {
+  HTTellText("§a[ThatSkyInfdev] RenderTest: Initialized ShaderTest");
+
   static const TerrainDepthVertex s_vertexData[4] = {{0, 1, 0}, {0, 1, 10}, {10, 1, 10}, {10, 1, 0}};
   static const u16 s_indexData[6] = {0, 1, 2, 2, 3, 0};
-  static Material s_mtrlData[4] = {kMaterial_Cliff, kMaterial_Cliff, kMaterial_Cliff, kMaterial_Cliff};
-  static u32 s_colorData = 0xFFFFFFFF;
-  static u32 s_lightData = 0xFFFFFFFF;
+  static const Material s_mtrlData[4] = {kMaterial_Cliff, kMaterial_Cliff, kMaterial_Cliff, kMaterial_Cliff};
+  static const u32 s_colorData = 0xFFFFFFFF;
+  static const u32 s_lightData = 0xFFFFFFFF;
 
   Matrix4 transform = Matrix4(1);
 
@@ -147,9 +135,9 @@ void RenderTest::m_InitializeCollision() {
   meshData.vtxStride = sizeof(TerrainDepthVertex);
   meshData.min = Vector4(-0.1f, 0.9f, -0.1f, 0);
   meshData.max = Vector4(10.1f, 1.1f, 10.1f, 0);
-  geoIndex = collisionGeoBarn->AddGeo(meshData);
+  m_geoIndex = m_collisionGeoBarn->AddGeo(meshData);
 
-  HTTellText("§c[ThatSkyInfdev] geoindex = %d", geoIndex);
+  HTTellText("§a[ThatSkyInfdev] RenderTest: geoindex = %d", m_geoIndex);
 
   CollisionGeoInstanceData instData;
   instData.mtrlData = s_mtrlData;
@@ -163,47 +151,29 @@ void RenderTest::m_InitializeCollision() {
   instData.lightStride = 0;*/
   instData.mask = 0x40;
   instData.unk_1 = 1000.0f;
-  geoInst = collisionGeoBarn->AddInstance(geoIndex, transform, instData, nullptr);
+  m_geoInst = m_collisionGeoBarn->AddInstance(m_geoIndex, transform, instData, nullptr);
 
-  HTTellText("§c[ThatSkyInfdev] geoInst = %p", geoInst);
+  HTTellText("§c[ThatSkyInfdev] RenderTest: geoInst = %p", m_geoInst);
 }
 
-void RenderTest::m_TerminateTerrain() {
-  ;
-}
+void ShaderTest::Terminate() {
+  // Remove collision.
+  m_collisionGeoBarn->RemoveInstance(m_geoInst);
+  m_collisionGeoBarn->RemoveGeo(m_geoIndex);
 
-void RenderTest::m_TerminateEndPortal() {
+  m_geoInst = nullptr;
+  m_geoIndex = 0;
+
   // Unload shader.
-  lua_debugdostring(
-    GetOverride()->GetLua(),
-    "local res = game:resources():GetResource(\"Shader\", \"EndPortal\")\n"
-    "if res ~= nil then\n"
-    "  res:DecLoadCount()\n"
-    "  if res:GetLoadCount() == 0 then\n"
-    "    game:resources():UnloadImmediate(res)\n"
-    "    Shader.delete(res, game:resourceHeap())\n"
-    "  end\n"
-    "end\n"
-  );
+  s_LuaUnloadShader("EndPortal");
 
-  //endportalR.Terminate();
-  endportalD.Release();
+  // Release renderer.
+  m_endportalR.Release();
+  m_endportalD.Release();
 }
 
-void RenderTest::m_TerminateCollision() {
-  collisionGeoBarn->RemoveInstance(geoInst);
-  collisionGeoBarn->RemoveGeo(geoIndex);
-
-  geoInst = nullptr;
-  geoIndex = 0;
-}
-
-void RenderTest::m_UpdateTerrain() {
-  ;
-}
-
-void RenderTest::m_UpdateEndPortal() {
-  GpuBuffer &gpuBuffer = endportalD.GetVertexBuffer(0);
+void ShaderTest::BuildScene() {
+  GpuBuffer &gpuBuffer = m_endportalD.GetVertexBuffer(0);
   void *mem = gpuBuffer.MapBuffer();
   if (mem) {
     float vao[9 * 4] = {
@@ -217,5 +187,41 @@ void RenderTest::m_UpdateEndPortal() {
     gpuBuffer.UnmapBuffer();
   }
 
-  endportalR.Queue();
+  m_endportalR.Queue();
+}
+
+// ----------------------------------------------------------------------------
+// [SECTION] RenderTest/TextureTest
+// ----------------------------------------------------------------------------
+
+// ----------------------------------------------------------------------------
+// [SECTION] RenderTest/Render
+// ----------------------------------------------------------------------------
+
+void Render::Initialize(
+  Game *game
+) {
+  tests = new Test *[3];
+  tests[0] = new TerrainTest();
+  tests[1] = new ShaderTest();
+  tests[2] = new TextureTest();
+
+  for (i32 i = 0; i < 3; i++)
+    tests[i]->Initialize(game);
+}
+
+void Render::Terminate() {
+  for (i32 i = 0; i < 3; i++) {
+    tests[i]->Terminate();
+    delete tests[i];
+  }
+
+  delete[] tests;
+}
+
+void Render::BuildScene() {
+  for (i32 i = 0; i < 3; i++)
+    tests[i]->BuildScene();
+}
+
 }
