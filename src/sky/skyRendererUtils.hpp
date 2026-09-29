@@ -6,9 +6,17 @@
 #include "sky/skyTypePlaceholders.hpp"
 #include "sky/skyGfx.hpp"
 
+// ----------------------------------------------------------------------------
+// [SECTION] Foward Declarations
+// ----------------------------------------------------------------------------
+
 using RendererConfiguration = void *;
 using RendererCallbacks = void *;
 using RendererCache = void *;
+
+struct TextureDescriptor;
+using BatchedPixels = u08;
+
 
 // ----------------------------------------------------------------------------
 // [SECTION] RendererUtils/Renderer
@@ -16,6 +24,8 @@ using RendererCache = void *;
 
 class Renderer {
 public:
+  static inline constexpr i32 kInvalidHandle = -1;
+
   Renderer() = default;
   virtual ~Renderer() = default;
 
@@ -115,9 +125,9 @@ public:
   virtual void ReleaseBuffer(i32 buffer) = 0;
   virtual void *MapBuffer(i32 buffer) = 0;
   virtual void UnmapBuffer(i32 buffer) = 0;
-  virtual void CopyBufferToImage(
+  virtual void CopyBuffer(
     i32 dstImage,
-    const void *regions,
+    const BatchedPixels *regions,
     u32 regionCount,
     i32 srcBuffer,
     u32 srcOffset
@@ -135,9 +145,11 @@ public:
 
   // - Texture Functions
 
-  virtual void CreateTexture() = 0;
-  virtual void Unk_82() = 0;
-  virtual void Unk_83() = 0;
+  virtual i32 CreateTexture(
+    cstring tag,
+    const TextureDescriptor &desc) = 0;
+  virtual void ReleaseTexture(i32 texture) = 0;
+  virtual void GenerateMipMaps(i32 texture) = 0;
   virtual void Unk_84() = 0;
   virtual void Unk_85() = 0;
   virtual void Unk_86() = 0;
@@ -179,16 +191,20 @@ public:
 
   ~GpuBuffer() = default;
   GpuBuffer()
-    : m_writeCount(0), m_writeIndex(0), m_readCount(0), m_readIndex(0)
-    , m_isMapped(false), m_isSharedWritten(false), m_isCpuCoherent(false) { }
+    : m_writeCount(0), m_writeIndex(0)
+    , m_readCount(0), m_readIndex(0)
+    , m_isMapped(false), m_isSharedWritten(false)
+    , m_isCpuCoherent(false) { }
   GpuBuffer(GpuBuffer &&) = delete;
   GpuBuffer(const GpuBuffer &) = delete;
   GpuBuffer &operator=(const GpuBuffer &) = delete;
 
-  inline u32 GetPaddedSize() { return (m_bufferSize + 16 * m_alignment - 1) & (-16 * m_alignment); }
-  inline u32 GetSize() { return m_bufferSize; }
-  inline i32 GetReadableBuffer() { return m_readableBuffer; }
-  inline u32 GetReadableBufferOffset() { return GetPaddedSize() * m_readIndex; }
+  inline u32 GetPaddedSize() const { return (m_bufferSize + 16 * m_alignment - 1) & (-16 * m_alignment); }
+  inline u32 GetSize() const { return m_bufferSize; }
+  inline i32 GetReadableBuffer() const { return m_readableBuffer; }
+  inline u32 GetReadableBufferOffset() const { return GetPaddedSize() * m_readIndex; }
+
+  u32 GetTotalMemSize() const;
 
   void Initialize(
     cstring name,
@@ -201,11 +217,9 @@ public:
   void *MapBuffer();
   void UnmapBuffer();
 
-  u32 GetTotalMemSize();
-
 private:
-  i32 m_readableBuffer = -1;
-  i32 m_writableBuffer = -1;
+  i32 m_readableBuffer = Renderer::kInvalidHandle;
+  i32 m_writableBuffer = Renderer::kInvalidHandle;
   u32 m_bufferSize = 0;
   GfxBind m_usage = kGfxBind_Undefined;
   GfxBufferType m_type = kGfxBufferType_Undefined;
@@ -293,6 +307,12 @@ private:
 // ----------------------------------------------------------------------------
 
 class PipelineInstance {
+public:
+  ~PipelineInstance() = default;
+  PipelineInstance() = default;
+
+  i32 FindTexture(cstring name, bool enableLog);
+
 private:
   u64 _align;
   u08 _gap[272 - 8];
