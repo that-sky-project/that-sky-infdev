@@ -59,5 +59,171 @@
     "breakHandHold": false,
     "bstGuid": 2,
     "killMomentum": false
+  },
+  "O$EnvNode": {
+    "$type": "EnvNode",
+    "transform": {
+      "row1": {
+        "x": 25,
+        "y": 0,
+        "z": 0,
+        "w": 0
+      },
+      "row2": {
+        "x": 0,
+        "y": 25,
+        "z": 0,
+        "w": 0
+      },
+      "row3": {
+        "x": 0,
+        "y": 0,
+        "z": 25,
+        "w": 0
+      },
+      "row4": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      }
+    },
+    "cheapFogTintMidTop": {
+      "r": 0.0036750000435858965,
+      "g": 0.034021999686956406,
+      "b": 0.05194700136780739,
+      "a": 1
+    },
+    "cheapFogFar": 3000,
+    "duration": 0,
+    "cheapFogNear": 30,
+    "underwaterFogDensity": 12,
+    "cheapFogTintMidMid": {
+      "r": 0.05352599918842316,
+      "g": 0.05352599918842316,
+      "b": 0.003785999957472086,
+      "a": 1
+    },
+    "sunAngleXZ": 0,
+    "undulationScale": 1,
+    "enabled": false,
+    "tintBot": {
+      "r": 1,
+      "g": 0.04736600071191788,
+      "b": 0.04736600071191788,
+      "a": 1
+    },
+    "sunAngleY": 160,
+    "bloomIntensity": 0.05000000074505806,
+    "cheapFogEnabled": false,
+    "underwaterCheapFogHeightDensity": 0.20000000298023224,
+    "exposure": 1,
+    "underwaterSunInt": 0.20000000298023224,
+    "underwaterSunColorScalar": {
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1
+    },
+    "underwaterFogHeight": 0.20000000298023224,
+    "sunInt": 1,
+    "underwaterFogDrawDistance": 100,
+    "underwaterCheapFogLumReduction": 0,
+    "underwaterBloomIntensity": 1,
+    "pos": {
+      "x": 66.15693664550781,
+      "y": 55.10580825805664,
+      "z": -267.4858093261719
+    },
+    "grassTint": {
+      "r": 0.04389499872922897,
+      "g": 0.07171700149774551,
+      "b": 0.20169000327587128,
+      "a": 1
+    },
+    "tintTop": {
+      "r": 0.0019539999775588512,
+      "g": 0.0068419999442994595,
+      "b": 0.027374999597668648,
+      "a": 1
+    },
+    "cheapFogHeight": 0.5,
+    "pointIntensity": 20,
+    "scale": {
+      "x": 1876.43896484375,
+      "y": 1073.6199951171875,
+      "z": 1887.8179931640625
+    },
+    "cheapFogTintBot": {
+      "r": 0.048868000507354736,
+      "g": 0.0034570000134408474,
+      "b": 0.0034570000134408474,
+      "a": 1
+    },
+    "quat": {
+      "i": 0,
+      "j": 0,
+      "k": 0,
+      "w": 1
+    },
+    "sunSize": 100,
+    "skipFadeOnLevelLoad": false,
+    "sunEclipseSize": 0.949999988079071,
+    "bloomOverbright": 0.10000000149011612,
+    "cheapFogHeightDensity": 0,
+    "tintMidTop": {
+      "r": 0.00007400000322377309,
+      "g": 0.0006820000126026571,
+      "b": 0.0010430000256747007,
+      "a": 1
+    },
+    "bstGuid": 3384673539,
+    "sunToMoon": 0,
+    "atmosphereDensity": 1,
+    "fadeInTime": 0,
+    "tintMidMid": {
+      "r": 0.050485000014305115,
+      "g": 0.014236999675631523,
+      "b": 0.002391000045463443,
+      "a": 1
+    },
+    "fogVolumeIntensity": -0.75,
+    "pointColor": {
+      "x": 0.027782000601291656,
+      "y": 0.03497700020670891,
+      "z": 0.12765400111675262
+    },
+    "fogDensity": 50,
+    "fadeOutTime": 5,
+    "moonPhase": 0.019999999552965164,
+    "tintMidBot": {
+      "r": 0.09656699746847153,
+      "g": 0.0045739999040961266,
+      "b": 0.01566700078547001,
+      "a": 1
+    },
+    "sunColor": {
+      "r": 0.01051000040024519,
+      "g": 0.012621000409126282,
+      "b": 0.050485000014305115,
+      "a": 1
+    },
+    "layer": 2,
+    "falloff": 18,
+    "fogHeight": 0.02500000037252903,
+    "drawDistance": 15000,
+    "cheapFogLumReduction": 0.800000011920929,
+    "cheapFogTintTop": {
+      "r": 0.0036750000435858965,
+      "g": 0.013012999668717384,
+      "b": 0.05194700136780739,
+      "a": 1
+    },
+    "cheapFogTintMidBot": {
+      "r": 0.05039500072598457,
+      "g": 0.019533999264240265,
+      "b": 0.0035649999044835567,
+      "a": 1
+    }
   }
 }
