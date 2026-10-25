@@ -1,7 +1,63 @@
 {
   "O$BodyCaptureArea": {
     "$type": "BodyCaptureArea",
-    "seed": 5201314,
-    "viewDistance": 17
+    "transform": {
+      "row1": {
+        "x": 5,
+        "y": 0,
+        "z": 0,
+        "w": 0
+      },
+      "row2": {
+        "x": 0,
+        "y": 5,
+        "z": 0,
+        "w": 0
+      },
+      "row3": {
+        "x": 0,
+        "y": 0,
+        "z": 5,
+        "w": 0
+      },
+      "row4": {
+        "x": 0,
+        "y": 5,
+        "z": 0,
+        "w": 1
+      }
+    }
+  },
+  "O$SpawnPoint": {
+    "$type": "Marker",
+    "enabled": true,
+    "scale": {
+      "x": 1,
+      "y": 1,
+      "z": 1
+    },
+    "quat": {
+      "i": 0,
+      "j": 0,
+      "k": 0,
+      "w": 1
+    },
+    "pos": {
+      "x": 0,
+      "y": 0.18,
+      "z": 0
+    }
+  },
+  "O$Spawn": {
+    "$type": "AvatarSetPos",
+    "autoStart": true,
+    "randomGroundInMarker": false,
+    "setLevelStartPosition": true,
+    "onGround": true,
+    "relMarker": null,
+    "marker": "P$SpawnPoint",
+    "breakHandHold": false,
+    "bstGuid": 2,
+    "killMomentum": false
   }
 }
