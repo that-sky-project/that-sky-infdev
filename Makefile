@@ -35,7 +35,7 @@ $(LEVEL_OUT)/$1/Objects.level.bin: \
 		$(wildcard $(LEVEL_SRC)/$1/*.decl.json) \
 		$(wildcard $(LEVEL_SRC)/$1/*.level.json) \
 		| $(LEVEL_OUT)/$1
-	node scripts/level.js $$^ $$@
+	node node_modules/@that-sky-project/that-sky-level/dist/cli.js -S -i $$^ -o $$@
 
 $(LEVEL_OUT)/$1/BstBaked.meshes: $(wildcard $(LEVEL_SRC)/$1/*.obj) | $(LEVEL_OUT)/$1
 	node node_modules/@that-sky-project/that-sky-level/dist/cli.js -C -i $$< -o $$@

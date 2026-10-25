@@ -3,7 +3,7 @@
     "pack": "node ./scripts/pack.js"
   },
   "dependencies": {
-    "@that-sky-project/that-sky-level": "^1.0.2",
+    "@that-sky-project/that-sky-level": "^1.1.0",
     "sldl-headers": "^0.33.7",
     "sldl-jsonify": "^1.1.0",
     "sldl-objects": "^1.2.7",
