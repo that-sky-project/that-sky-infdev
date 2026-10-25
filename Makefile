@@ -3,10 +3,17 @@
 DIST       := dist/assets/Data
 SHADER_SRC := assets/shaders
 SHADER_BIN := $(DIST)/Shaders/Bin
-LEVEL_SRC  := assets/levels/Infdev_INF
-LEVEL_OUT  := $(DIST)/Levels/Infdev_INF
+LEVEL_SRC  := assets/levels
+LEVEL_OUT  := $(DIST)/Levels
 
 SHADERS    := EndPortal SimpleColorTest
+
+# Every directory under LEVEL_SRC that contains a *.level.json is a level.
+LEVEL_NAMES   := $(notdir $(patsubst %/,%,$(dir $(wildcard $(LEVEL_SRC)/*/*.level.json))))
+LEVEL_TARGETS := $(foreach l,$(LEVEL_NAMES), \
+  $(LEVEL_OUT)/$(l)/Objects.level.bin \
+  $(LEVEL_OUT)/$(l)/BstBaked.meshes \
+  $(LEVEL_OUT)/$(l)/Resources.lua)
 
 .PHONY: all level shaders clean
 
@@ -16,19 +23,28 @@ all: level shaders
 # Level
 # ---------------------------------------------------------------------------
 
-level: $(LEVEL_OUT)/Objects.level.bin $(LEVEL_OUT)/BstBaked.meshes $(LEVEL_OUT)/Resources.lua
+level: $(LEVEL_TARGETS)
 
-$(LEVEL_OUT)/Objects.level.bin: \
-		$(LEVEL_SRC)/Infdev_INF.decl.json \
-		$(LEVEL_SRC)/Infdev_INF.level.json \
-		| $(LEVEL_OUT)
-	node scripts/level.js $^ $@
+# Macro: emit rules for one level directory.
+# $1 = level directory name under LEVEL_SRC
+define LEVEL_RULES =
+$(LEVEL_OUT)/$1: | $(LEVEL_OUT)
+	mkdir -p $$@
 
-$(LEVEL_OUT)/BstBaked.meshes: $(LEVEL_SRC)/Infdev_INF.obj | $(LEVEL_OUT)
-	node node_modules/@that-sky-project/that-sky-level/dist/cli.js -C -i $< -o $@
+$(LEVEL_OUT)/$1/Objects.level.bin: \
+		$(wildcard $(LEVEL_SRC)/$1/*.decl.json) \
+		$(wildcard $(LEVEL_SRC)/$1/*.level.json) \
+		| $(LEVEL_OUT)/$1
+	node scripts/level.js $$^ $$@
 
-$(LEVEL_OUT)/Resources.lua: $(LEVEL_SRC)/Resources.lua | $(LEVEL_OUT)
-	cp $< $@
+$(LEVEL_OUT)/$1/BstBaked.meshes: $(wildcard $(LEVEL_SRC)/$1/*.obj) | $(LEVEL_OUT)/$1
+	node node_modules/@that-sky-project/that-sky-level/dist/cli.js -C -i $$< -o $$@
+
+$(LEVEL_OUT)/$1/Resources.lua: $(LEVEL_SRC)/$1/Resources.lua | $(LEVEL_OUT)/$1
+	cp $$< $$@
+endef
+
+$(foreach l,$(LEVEL_NAMES),$(eval $(call LEVEL_RULES,$(l))))
 
 # ---------------------------------------------------------------------------
 # Shaders
