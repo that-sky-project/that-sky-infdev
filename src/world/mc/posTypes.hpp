@@ -1,5 +1,5 @@
-#ifndef __MC_POSTYPES_HPP__
-#define __MC_POSTYPES_HPP__
+#ifndef __WORLD_MC_POSTYPES_HPP__
+#define __WORLD_MC_POSTYPES_HPP__
 
 #include <Utils/Types.h>
 

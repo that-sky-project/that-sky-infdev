@@ -2,6 +2,7 @@
 #define __SKY_SKYVECTORMATH_HPP__
 
 #include <Utils/Types.h>
+#include <Base/Meta.hpp>
 #include <intrin.h>
 
 struct Vector2 {
@@ -189,5 +190,11 @@ struct Matrix4 {
 
   Vector4 vec[4];
 };
+
+META_DECLARE_TYPE(Matrix3)
+META_DECLARE_TYPE(Matrix4)
+META_DECLARE_TYPE(Vector2)
+META_DECLARE_TYPE(Vector3)
+META_DECLARE_TYPE(Vector4)
 
 #endif

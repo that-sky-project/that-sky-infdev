@@ -7,6 +7,7 @@
 #include "mod/moduleBarnExt.hpp"
 #include "render/renderTest.hpp"
 #include "world/heightMapChunkBarn.hpp"
+#include "bodyCapture/bodyCapture.hpp"
 
 class Mod;
 META_DECLARE_CLASS(Mod)
@@ -43,6 +44,7 @@ private:
   ModuleBarnExt *m_moduleBarnExt = nullptr;
   RenderTest *m_renderTest = nullptr;
   HeightMapChunkBarn *m_chunks = nullptr;
+  BodyCaptureController *m_bodyCaptureController = nullptr;
 };
 
 #endif

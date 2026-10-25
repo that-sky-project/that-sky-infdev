@@ -54,4 +54,5 @@ void Modbase::RegisterAssets() {
   s_ModbaseRegisterShader("EndPortal");
 
   s_ModbaseRegisterLevel("Infdev_INF");
+  s_ModbaseRegisterLevel("Infdev_BODY");
 }

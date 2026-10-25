@@ -99,6 +99,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\src\bodyCapture\bodyCapture.cpp" />
     <ClCompile Include="..\..\..\src\dllmain.cpp" />
     <ClCompile Include="..\..\..\src\mod\base\baseHooks.cpp" />
     <ClCompile Include="..\..\..\src\mod\base\override.cpp" />

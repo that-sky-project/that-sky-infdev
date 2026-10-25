@@ -19,9 +19,6 @@
     <Filter Include="src\utils">
       <UniqueIdentifier>{2fc7b914-9449-44ad-9724-47e5f246d7e6}</UniqueIdentifier>
     </Filter>
-    <Filter Include="src\mc">
-      <UniqueIdentifier>{ebe375ce-19e3-4f12-b722-829c3d501a59}</UniqueIdentifier>
-    </Filter>
     <Filter Include="src\render">
       <UniqueIdentifier>{ffe03444-b2fe-412f-853f-ca32ca44f79b}</UniqueIdentifier>
     </Filter>
@@ -30,6 +27,9 @@
     </Filter>
     <Filter Include="src\world">
       <UniqueIdentifier>{2b68f887-9b73-4897-a82e-50df67da2c57}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\bodyCapture">
+      <UniqueIdentifier>{09b576ff-8057-48ec-83a5-9ad2f3b532d2}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -107,6 +107,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\sky\functions\skyObjectFactory.cpp">
       <Filter>src\sky\functions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\bodyCapture\bodyCapture.cpp">
+      <Filter>src\bodyCapture</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
