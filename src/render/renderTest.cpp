@@ -19,7 +19,7 @@ static const u16 sIndicesT[6] = {0, 1, 2, 0, 2, 1};
 static const u16 sIndicesG[6] = {0, 1, 2, 0, 2, 1};
 
 void RenderTest::Initialize(
-  Game *game
+  Game *game_
 ) {
   /*lua_debugdostring(
     GetOverride()->GetLua(),
@@ -44,6 +44,7 @@ void RenderTest::Initialize(
     "end\n"
   );*/
 
+  game = game_;
   materialDefBarn = game->resolveMember<MaterialDefBarn *>("materialDefBarn");
   resourceManager = game->resolveMember<ResourceManager *>("resources");
   heap = game->resolveMember<Heap *>("levelHeap");
@@ -67,6 +68,9 @@ void RenderTest::Terminate() {
 }
 
 void RenderTest::Update() {
+  if (strcmp(game->resolveMember<cstring>("levelName"), "CandleSpace") != 0)
+    return;
+
   m_UpdateTerrain();
   m_UpdateEndPortal();
 }

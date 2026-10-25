@@ -61,6 +61,8 @@ void Mod::OnLevelLoad(
     m_game->resolveMember<MaterialDefBarn *>("materialDefBarn"),
     m_game->resolveMember<cstring>("levelName")
   );
+
+  m_bodyCaptureController->OnLevelLoad();
 }
 
 META_REGISTER_FUNCTION_MEMBER(Mod, OnLevelLoadLate)
@@ -71,6 +73,7 @@ void Mod::OnLevelUnload() {
   m_chunks->OnLevelUnload(
     m_game->resolveMember<cstring>("levelName")
   );
+  m_bodyCaptureController->OnLevelUnload();
 }
 
 META_REGISTER_FUNCTION_MEMBER(Mod, OnLevelUnloadLate)
