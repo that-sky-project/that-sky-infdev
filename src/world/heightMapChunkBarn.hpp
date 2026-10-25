@@ -8,7 +8,7 @@
 #include <limits>
 #include <Utils/Types.h>
 #include <Base/Meta.hpp>
-#include "mc/posTypes.hpp"
+#include "world/mc/posTypes.hpp"
 #include "mod/moduleBarnExt.hpp"
 #include "sky/skyGame.hpp"
 #include "sky/skyVertex.hpp"
