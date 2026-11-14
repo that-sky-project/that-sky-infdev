@@ -1,0 +1,6 @@
+{
+  "C$VoxelChunkSourceParams": {
+    "seed": "int32_t",
+    "viewDistance": "uint32_t"
+  }
+}
