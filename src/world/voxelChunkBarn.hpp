@@ -73,9 +73,9 @@ struct hash<VoxelChunkPos> {
 // generation until the chunk is unloaded.
 struct VoxelChunkMesh {
   // Hard per-chunk limits. They bound the GPU buffers allocated up-front.
-  // A padded 16^3 chunk normally produces fewer than ~600 vertices.
-  static constexpr u32 kMaxVertices = 3072;
-  static constexpr u32 kMaxIndices = 12288;
+  // A padded 16^3 chunk normally produces fewer than ~800 vertices.
+  static constexpr u32 kMaxVertices = 1280;
+  static constexpr u32 kMaxIndices = 7168;
 
   inline bool IsEmpty() const { return indices.empty(); }
   inline void Clear() {
@@ -89,7 +89,7 @@ struct VoxelChunkMesh {
 
   std::vector<TerrainDepthVertex> depthVertices = {};
   std::vector<TerrainMaterialVertex> materialVertices = {};
-  std::vector<u16> indices = {};
+  std::vector<u32> indices = {};
 
   Vector4 min = Vector4(std::numeric_limits<f32>::max());
   Vector4 max = Vector4(-std::numeric_limits<f32>::max());
@@ -173,6 +173,10 @@ private:
   static constexpr i32 kFirstChunkY = 0;
   static constexpr i32 kLastChunkY = 7;
   static constexpr i32 kVerticalChunkCount = kLastChunkY - kFirstChunkY + 1;
+  // Only chunks that intersect the surface (or a cave close to it) produce
+  // geometry. Buffers are therefore sized for roughly this many non-empty
+  // chunks per horizontal column instead of every vertical layer.
+  static constexpr u32 kEstimatedSurfaceLayers = 4;
   static constexpr u32 kMaxViewDistance = 16;
 
   struct RenderData {
@@ -279,8 +283,9 @@ private:
   bool m_voxelsReady = false;
   VoxelChunkSourceParams m_params = {};
   u32 m_seed = 1337;
-  u32 m_viewDistance = 4;
-  u32 m_chunkCapacity = 0;
+  u32 m_viewDistance = 8;
+  u32 m_renderChunkCapacity = 0;
+  bool m_renderCapacityWarned = false;
 
   // Game contexts.
   Heap *m_heap = nullptr;

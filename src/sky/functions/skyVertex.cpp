@@ -117,9 +117,11 @@ void VertexData::AddIndexBuffer(
   m_idxBuffers[idx].unk_3 = 0;
   m_idxBuffers[idx].capacity = dataLength;
 
+  // kGfxTypeSizes is indexed by (GfxType - 1), matching AddVertexBuffer.
   u32 elementSize = 0;
-  if (type < kGfxType_COUNT)
-    elementSize = kGfxTypeSizes[type];
+  u08 typeIdx = type - 1;
+  if (typeIdx <= kGfxType_COUNT - 2)
+    elementSize = kGfxTypeSizes[typeIdx];
 
   m_idxBuffers[idx].buffer.Initialize(
     m_name,

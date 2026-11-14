@@ -28,7 +28,7 @@ META_REGISTER_SIMPLE_MEMBER(VoxelChunkSourceParams, seed)
 META_DATA_MEMBER_VARIABLE(VoxelChunkSourceParams, seed, Tool_DefaultValue, "1337")
 
 META_REGISTER_SIMPLE_MEMBER(VoxelChunkSourceParams, viewDistance)
-META_DATA_MEMBER_VARIABLE(VoxelChunkSourceParams, viewDistance, Tool_DefaultValue, "4")
+META_DATA_MEMBER_VARIABLE(VoxelChunkSourceParams, viewDistance, Tool_DefaultValue, "8")
 META_DATA_MEMBER_VARIABLE(VoxelChunkSourceParams, viewDistance, Tool_MinMaxValues, "(1, 16)")
 
 // ----------------------------------------------------------------------------
@@ -318,9 +318,9 @@ bool VoxelChunkSource::Generate(
           vertexNormals[baseVertex + i2]))
           std::swap(i1, i2);
 
-        mesh->indices.push_back((u16)(baseVertex + i0));
-        mesh->indices.push_back((u16)(baseVertex + i1));
-        mesh->indices.push_back((u16)(baseVertex + i2));
+        mesh->indices.push_back(baseVertex + i0);
+        mesh->indices.push_back(baseVertex + i1);
+        mesh->indices.push_back(baseVertex + i2);
       }
     }
   }
@@ -357,7 +357,7 @@ void VoxelChunkBarn::RenderData::Initialize(
 
   // The index buffer is shared by all chunks and rewritten every time the
   // scene is built, because every voxel chunk has a different topology.
-  data.AddIndexBuffer(0, kGfxType_SHORT, kGfxBind_UploadTriple, indexCapacity, nullptr);
+  data.AddIndexBuffer(0, kGfxType_UINT, kGfxBind_UploadTriple, indexCapacity, nullptr);
   data.AddVertexBuffer(0, types, attrs, attrCount, kGfxBind_UploadTriple, 0, nullptr);
   data.EndDefinition();
 
@@ -408,8 +408,15 @@ void VoxelChunkBarn::ClientChunk::BuildCollision() {
   CollisionGeoMeshData meshData;
   meshData.tag = "VoxelChunk";
 
-  meshData.idxBuffer = m_mesh.indices.data();
-  meshData.idxCount = (u32)m_mesh.indices.size();
+  // The render path uses 32-bit indices, but a chunk has far fewer than
+  // 64k vertices and the collision geometry path is kept on 16-bit indices.
+  std::vector<u16> collisionIndices;
+  collisionIndices.reserve(m_mesh.indices.size());
+  for (u32 index: m_mesh.indices)
+    collisionIndices.push_back((u16)index);
+
+  meshData.idxBuffer = collisionIndices.data();
+  meshData.idxCount = (u32)collisionIndices.size();
   meshData.idxStride = sizeof(u16);
 
   meshData.vtxBuffer = m_mesh.materialVertices.data();
@@ -625,10 +632,11 @@ void VoxelChunkBarn::OnLevelLoad(
 
   // Force the next update to build the chunk set for the new level.
   m_lastPos = {-2147483647, -2147483647};
+  m_renderCapacityWarned = false;
 
-  // Every chunk column contains a fixed number of vertical layers, and the
-  // chunk set is rebuilt exactly on movement, so this is an upper bound.
-  m_chunkCapacity = ms_CountChunks(m_viewDistance) * (u32)kVerticalChunkCount + 8;
+  // Most vertical layers are empty, so the render buffers are sized for the
+  // surface chunks of each column instead of all kVerticalChunkCount layers.
+  m_renderChunkCapacity = ms_CountChunks(m_viewDistance) * kEstimatedSurfaceLayers + 8;
 
   // Initialize chunk source.
   {
@@ -637,8 +645,8 @@ void VoxelChunkBarn::OnLevelLoad(
     m_sourceReady = true;
   }
 
-  const u32 maxVertices = m_chunkCapacity * VoxelChunkMesh::kMaxVertices;
-  const u32 maxIndices = m_chunkCapacity * VoxelChunkMesh::kMaxIndices;
+  const u32 maxVertices = m_renderChunkCapacity * VoxelChunkMesh::kMaxVertices;
+  const u32 maxIndices = m_renderChunkCapacity * VoxelChunkMesh::kMaxIndices;
 
   // Initialize renderer.
   m_depth.Initialize(
@@ -650,7 +658,7 @@ void VoxelChunkBarn::OnLevelLoad(
     "TerrainDepth",
     scene->GetRenderListByName("TerrainDepth"),
     m_heap,
-    m_chunkCapacity,
+    m_renderChunkCapacity,
     maxVertices,
     maxIndices
   );
@@ -663,7 +671,7 @@ void VoxelChunkBarn::OnLevelLoad(
     "GrassSh",
     scene->GetRenderListByName("TerrainMats"),
     m_heap,
-    m_chunkCapacity,
+    m_renderChunkCapacity,
     maxVertices,
     maxIndices
   );
@@ -819,12 +827,13 @@ void VoxelChunkBarn::BuildScene(
   m_depth.ClearRenderChunk();
   m_mats.ClearRenderChunk();
 
-  const u32 maxVertices = m_chunkCapacity * VoxelChunkMesh::kMaxVertices;
-  const u32 maxIndices = m_chunkCapacity * VoxelChunkMesh::kMaxIndices;
+  const u32 maxVertices = m_renderChunkCapacity * VoxelChunkMesh::kMaxVertices;
+  const u32 maxIndices = m_renderChunkCapacity * VoxelChunkMesh::kMaxIndices;
 
   u32 vtxOffset = 0;
   u32 idxOffset = 0;
   u32 chunkCount = 0;
+  bool capacityExceeded = false;
 
   // Append all generated chunks to the render buffers.
   {
@@ -838,12 +847,15 @@ void VoxelChunkBarn::BuildScene(
       const u32 vtxCount = (u32)chunk.m_mesh.materialVertices.size();
       const u32 idxCount = (u32)chunk.m_mesh.indices.size();
 
-      if (
-        chunkCount >= m_chunkCapacity
-        || vtxOffset + vtxCount > maxVertices
-        || idxOffset + idxCount > maxIndices
-      )
+      if (chunkCount >= m_renderChunkCapacity) {
+        capacityExceeded = true;
         break;
+      }
+
+      if (vtxOffset + vtxCount > maxVertices || idxOffset + idxCount > maxIndices) {
+        capacityExceeded = true;
+        break;
+      }
 
       memcpy(
         (u08 *)depthVtx + (size_t)vtxOffset * sizeof(TerrainDepthVertex),
@@ -855,13 +867,13 @@ void VoxelChunkBarn::BuildScene(
         sizeof(TerrainMaterialVertex) * vtxCount);
 
       memcpy(
-        (u08 *)depthIdx + (size_t)idxOffset * sizeof(u16),
+        (u08 *)depthIdx + (size_t)idxOffset * sizeof(u32),
         chunk.m_mesh.indices.data(),
-        sizeof(u16) * idxCount);
+        sizeof(u32) * idxCount);
       memcpy(
-        (u08 *)matIdx + (size_t)idxOffset * sizeof(u16),
+        (u08 *)matIdx + (size_t)idxOffset * sizeof(u32),
         chunk.m_mesh.indices.data(),
-        sizeof(u16) * idxCount);
+        sizeof(u32) * idxCount);
 
       m_depth.AddRenderChunk(idxOffset, idxCount, (i32)vtxOffset);
       m_mats.AddRenderChunk(idxOffset, idxCount, (i32)vtxOffset);
@@ -870,6 +882,14 @@ void VoxelChunkBarn::BuildScene(
       idxOffset += idxCount;
       ++chunkCount;
     }
+  }
+
+  if (capacityExceeded && !m_renderCapacityWarned) {
+    m_renderCapacityWarned = true;
+    HTTellText(
+      "§e[VoxelChunkBarn] Render buffer capacity exceeded (%u chunks); "
+      "increase kEstimatedSurfaceLayers or reduce viewDistance",
+      m_renderChunkCapacity);
   }
 
   // Unmap buffers.
