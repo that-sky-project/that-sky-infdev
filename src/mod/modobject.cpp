@@ -22,10 +22,18 @@ void Mod::Initialize(
   m_chunks->Initialize(
     m_game->resolveMember<CollisionGeoBarn *>("collisionGeoBarn"));
 
+  m_voxelChunks = new VoxelChunkBarn();
+  m_voxelChunks->Initialize(
+    m_game->resolveMember<CollisionGeoBarn *>("collisionGeoBarn"));
+
   m_bodyCaptureController = new BodyCaptureController();
 
   m_objectSource->TryAddFactory(Variable{
     &m_chunks, GetMetaClassByType<HeightMapChunkBarn *>()
+  });
+
+  m_objectSource->TryAddFactory(Variable{
+    &m_voxelChunks, GetMetaClassByType<VoxelChunkBarn *>()
   });
 
   m_objectSource->TryAddFactory(Variable{
@@ -35,6 +43,9 @@ void Mod::Initialize(
 
 META_REGISTER_FUNCTION_MEMBER(Mod, Terminate)
 void Mod::Terminate() {
+  m_voxelChunks->Terminate();
+  delete m_voxelChunks;
+
   m_chunks->Terminate();
   delete m_chunks;
 
@@ -62,6 +73,14 @@ void Mod::OnLevelLoad(
     m_game->resolveMember<cstring>("levelName")
   );
 
+  m_voxelChunks->OnLevelLoad(
+    m_game,
+    m_game->resolveMember<ResourceManager *>("resources"),
+    m_game->resolveMember<Scene *>("scene"),
+    m_game->resolveMember<MaterialDefBarn *>("materialDefBarn"),
+    m_game->resolveMember<cstring>("levelName")
+  );
+
   m_bodyCaptureController->OnLevelLoad();
 }
 
@@ -71,6 +90,9 @@ void Mod::OnLevelLoadLate() { }
 META_REGISTER_FUNCTION_MEMBER(Mod, OnLevelUnload)
 void Mod::OnLevelUnload() {
   m_chunks->OnLevelUnload(
+    m_game->resolveMember<cstring>("levelName")
+  );
+  m_voxelChunks->OnLevelUnload(
     m_game->resolveMember<cstring>("levelName")
   );
   m_bodyCaptureController->OnLevelUnload();
@@ -97,6 +119,12 @@ void Mod::Update() {
     m_game->resolveMember<AvatarBarn *>("avatarBarn"),
     m_game->resolveMember<cstring>("levelName")
   );
+
+  m_voxelChunks->Update(
+    m_game,
+    m_game->resolveMember<AvatarBarn *>("avatarBarn"),
+    m_game->resolveMember<cstring>("levelName")
+  );
 }
 
 META_REGISTER_FUNCTION_MEMBER(Mod, UpdateLate)
@@ -108,6 +136,10 @@ void Mod::UpdateBackground() { }
 META_REGISTER_FUNCTION_MEMBER(Mod, BuildScene)
 void Mod::BuildScene() {
   m_chunks->BuildScene(
+    m_game->resolveMember<cstring>("levelName")
+  );
+
+  m_voxelChunks->BuildScene(
     m_game->resolveMember<cstring>("levelName")
   );
 }

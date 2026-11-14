@@ -55,4 +55,5 @@ void Modbase::RegisterAssets() {
 
   s_ModbaseRegisterLevel("Infdev_INF");
   s_ModbaseRegisterLevel("Infdev_BODY");
+  s_ModbaseRegisterLevel("Infdev_VOXEL");
 }
