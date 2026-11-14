@@ -7,3 +7,6 @@
 [submodule "libraries/that-sky-modbase"]
 	path = libraries/that-sky-modbase
 	url = https://github.com/that-sky-project/that-sky-modbase
+[submodule "libraries/voxels"]
+	path = libraries/voxels
+	url = https://github.com/that-sky-project/that-sky-voxels
