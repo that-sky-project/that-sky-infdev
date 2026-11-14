@@ -25,170 +25,218 @@ META_DATA_CLASS(VoxelChunkSourceParams, Tool_Export, "true")
 META_DATA_CLASS(VoxelChunkSourceParams, Infdev_LevelExport, "true")
 
 META_REGISTER_SIMPLE_MEMBER(VoxelChunkSourceParams, seed)
-META_DATA_MEMBER_VARIABLE(VoxelChunkSourceParams, seed, Tool_DefaultValue, "1196250184")
+META_DATA_MEMBER_VARIABLE(VoxelChunkSourceParams, seed, Tool_DefaultValue, "1337")
 
 META_REGISTER_SIMPLE_MEMBER(VoxelChunkSourceParams, viewDistance)
-META_DATA_MEMBER_VARIABLE(VoxelChunkSourceParams, viewDistance, Tool_DefaultValue, "4")
-META_DATA_MEMBER_VARIABLE(VoxelChunkSourceParams, viewDistance, Tool_MinMaxValues, "(1, 6)")
+META_DATA_MEMBER_VARIABLE(VoxelChunkSourceParams, viewDistance, Tool_DefaultValue, "2")
+META_DATA_MEMBER_VARIABLE(VoxelChunkSourceParams, viewDistance, Tool_MinMaxValues, "(1, 4)")
 
 // ----------------------------------------------------------------------------
 // [SECTION] VoxelChunkSource
 // ----------------------------------------------------------------------------
 
-// The surface is sampled in grid space, where the voxels library uses Z as
-// the up axis. The polygonizer swaps Y and Z in its output, so the positions
-// it returns are already in the Y-up world space used by Sky.
 void VoxelChunkSource::Initialize(
-  i32 seed
+  u32 seed
 ) {
   Terminate();
-
-  m_noise = new PerlinNoise();
-
-  Random random = Random(seed);
-  m_noise->Initialize(&random, 16);
+  m_surface = new ValueNoiseSurface(seed);
 }
 
 void VoxelChunkSource::Terminate() {
-  if (!m_noise)
+  if (!m_surface)
     return;
 
-  m_noise->Terminate();
-  delete m_noise;
-  m_noise = nullptr;
+  delete m_surface;
+  m_surface = nullptr;
 }
 
-void VoxelChunkSource::GetSurface(
-  float xStart,
-  float xEnd,
-  float xStep,
-  float yStart,
-  float yEnd,
-  float yStep,
-  float zStart,
-  float zEnd,
-  float zStep,
-  float *output,
-  unsigned char *materialid,
-  unsigned char *blend
+// The polygonizer returns Y-up positions: output = (gridX, gridZ, gridY).
+// The analytic field is defined in grid coordinates (Z-up), so convert
+// positions and gradients when crossing the boundary.
+static f32 s_SurfaceDistance(
+  const ValueNoiseSurface &surface,
+  f32 x,
+  f32 y,
+  f32 z
 ) {
-  if (!m_noise || !output)
-    return;
-
-  u32 id = 0;
-  for (f32 z = zStart; z < zEnd; z += zStep) {
-    for (f32 y = yStart; y < yEnd; y += yStep) {
-      for (f32 x = xStart; x < xEnd; x += xStep) {
-        // Grid (x, y, z) -> world (x, z, y), with x/z shifted by the chunk
-        // origin. `y` is the world Z axis and `z` is the world Y (up) axis.
-        f32 wx = (f32)m_baseX + x;
-        f32 wy = z;
-        f32 wz = (f32)m_baseZ + y;
-
-        output[id] = m_SampleDensity(wx, wy, wz);
-        if (materialid)
-          materialid[id] = 0;
-        if (blend)
-          blend[id] = 0;
-
-        ++id;
-      }
-    }
-  }
+  return surface.Distance(x, z, y);
 }
 
-f32 VoxelChunkSource::m_SampleDensity(
-  f32 wx,
-  f32 wy,
-  f32 wz
-) const {
-  // Same noise configuration as HeightMapChunkBarn, so both generators
-  // describe the same terrain: low-frequency octaves dominate, and the
-  // 1e-4 scale brings the accumulated amplitude down to a few blocks.
-  static constexpr f32 kNoiseScale = 1368.824f;
-  static constexpr f32 kNoiseAmplitude = 1e-4f;
-  static constexpr f32 kBaseHeight = 2.0f;
-  static constexpr f32 kPerturbation = 0.5f;
+static ValueNoiseVector s_SurfaceGradient(
+  const ValueNoiseSurface &surface,
+  f32 x,
+  f32 y,
+  f32 z
+) {
+  const ValueNoiseVector gradient = surface.Gradient(x, z, y);
+  return ValueNoiseVector{gradient.x, gradient.z, gradient.y};
+}
 
-  f32 height = kBaseHeight
-    + m_noise->GetValue(wx * kNoiseScale, 10.0f, wz * kNoiseScale) * kNoiseAmplitude;
+static ValueNoiseVector s_SurfaceNormal(
+  const ValueNoiseSurface &surface,
+  f32 x,
+  f32 y,
+  f32 z
+) {
+  const ValueNoiseVector gradient = s_SurfaceGradient(surface, x, y, z);
+  const f32 lengthSquared = gradient.x * gradient.x
+    + gradient.y * gradient.y
+    + gradient.z * gradient.z;
 
-  // Positive density is outside the surface, so the solid part is below the
-  // height field. The 3D term turns the height field into pockets, overhangs
-  // and caves.
-  f32 density = wy - height;
-  density += m_noise->GetValue(
-    wx * kNoiseScale, wy * kNoiseScale, wz * kNoiseScale) * (kNoiseAmplitude * kPerturbation);
+  if (lengthSquared < 1e-12f)
+    return ValueNoiseVector{0.0f, 1.0f, 0.0f};
 
-  return density;
+  const f32 inverse = 1.0f / sqrtf(lengthSquared);
+  return ValueNoiseVector{
+    gradient.x * inverse,
+    gradient.y * inverse,
+    gradient.z * inverse
+  };
+}
+
+// The polygonizer works on an 8-bit distance field, so the raw mesh has small
+// quantized terraces. A few Newton steps along the analytic field's gradient
+// move each vertex onto the exact zero level set. This works for the 3D caves
+// and overhangs too, unlike a heightfield-only Y snap.
+static void s_ProjectToSurface(
+  const ValueNoiseSurface &surface,
+  TerrainMaterialVertex *vertex
+) {
+  f32 x = vertex->a_position[0];
+  f32 y = vertex->a_position[1];
+  f32 z = vertex->a_position[2];
+
+  for (i32 iteration = 0; iteration < 3; ++iteration) {
+    const f32 distance = s_SurfaceDistance(surface, x, y, z);
+    if (fabsf(distance) < 0.005f)
+      break;
+
+    const ValueNoiseVector gradient = s_SurfaceGradient(surface, x, y, z);
+    const f32 gradientLengthSquared = gradient.x * gradient.x
+      + gradient.y * gradient.y
+      + gradient.z * gradient.z;
+    if (gradientLengthSquared < 1e-8f)
+      break;
+
+    f32 stepX = gradient.x * (distance / gradientLengthSquared);
+    f32 stepY = gradient.y * (distance / gradientLengthSquared);
+    f32 stepZ = gradient.z * (distance / gradientLengthSquared);
+
+    // The distance field is clamped, so guard against a bad extrapolation.
+    const f32 stepLength = sqrtf(stepX * stepX + stepY * stepY + stepZ * stepZ);
+    const f32 maxStep = 1.0f;
+    if (stepLength > maxStep) {
+      const f32 scale = maxStep / stepLength;
+      stepX *= scale;
+      stepY *= scale;
+      stepZ *= scale;
+    }
+
+    x -= stepX;
+    y -= stepY;
+    z -= stepZ;
+  }
+
+  vertex->a_position[0] = x;
+  vertex->a_position[1] = y;
+  vertex->a_position[2] = z;
 }
 
 // Returns true when the triangle is wound counter-clockwise as seen from the
-// side its vertex normals point at. The polygonizer emits positions and
-// normals in the same (Y-up) space, but its winding follows the internal Z-up
-// grid, so it has to be corrected for Sky's renderer.
+// side its vertex normals point at. The polygonizer mirrors the winding when
+// it swaps Y/Z, so it has to be corrected for Sky's renderer.
 static bool s_IsFrontFacing(
-  const Voxels::PolygonVertex &v0,
-  const Voxels::PolygonVertex &v1,
-  const Voxels::PolygonVertex &v2
+  const TerrainMaterialVertex &v0,
+  const TerrainMaterialVertex &v1,
+  const TerrainMaterialVertex &v2,
+  const ValueNoiseVector &n0,
+  const ValueNoiseVector &n1,
+  const ValueNoiseVector &n2
 ) {
-  f32 e1x = v1.Position.x - v0.Position.x;
-  f32 e1y = v1.Position.y - v0.Position.y;
-  f32 e1z = v1.Position.z - v0.Position.z;
+  f32 e1x = v1.a_position[0] - v0.a_position[0];
+  f32 e1y = v1.a_position[1] - v0.a_position[1];
+  f32 e1z = v1.a_position[2] - v0.a_position[2];
 
-  f32 e2x = v2.Position.x - v0.Position.x;
-  f32 e2y = v2.Position.y - v0.Position.y;
-  f32 e2z = v2.Position.z - v0.Position.z;
+  f32 e2x = v2.a_position[0] - v0.a_position[0];
+  f32 e2y = v2.a_position[1] - v0.a_position[1];
+  f32 e2z = v2.a_position[2] - v0.a_position[2];
 
   f32 cx = e1y * e2z - e1z * e2y;
   f32 cy = e1z * e2x - e1x * e2z;
   f32 cz = e1x * e2y - e1y * e2x;
 
-  f32 nx = v0.Normal.x + v1.Normal.x + v2.Normal.x;
-  f32 ny = v0.Normal.y + v1.Normal.y + v2.Normal.y;
-  f32 nz = v0.Normal.z + v1.Normal.z + v2.Normal.z;
+  f32 nx = n0.x + n1.x + n2.x;
+  f32 ny = n0.y + n1.y + n2.y;
+  f32 nz = n0.z + n1.z + n2.z;
 
   return cx * nx + cy * ny + cz * nz >= 0.0f;
 }
 
 bool VoxelChunkSource::Generate(
-  const ChunkPos &pos,
+  const VoxelChunkPos &pos,
   VoxelChunkMesh *mesh
 ) {
-  if (!m_noise || !mesh)
+  if (!m_surface || !mesh)
     return false;
 
   mesh->Clear();
 
-  m_baseX = pos.x * (i32)kChunkSize;
-  m_baseZ = pos.z * (i32)kChunkSize;
+  // ChunkKey is in output space (Y-up); the grid expects Z-up coordinates.
+  // The grid is larger than the core chunk: one block of padding on every
+  // side makes the boundary cells use the neighbour's real samples instead
+  // of the clamped edge of the grid. Without this, adjacent chunks produce
+  // slightly different boundary geometry and visible cracks.
+  const f32 startX = (f32)(pos.x * (i32)kChunkSize - (i32)kChunkPadding);
+  const f32 startY = (f32)(pos.z * (i32)kChunkSize - (i32)kChunkPadding);
+  const f32 startZ = (f32)(pos.y * (i32)kChunkSize - (i32)kChunkPadding);
 
   Voxels::Grid *grid = Voxels::Grid::Create(
-    kChunkSize, kChunkSize, kChunkSize,
-    0.0f, 0.0f, 0.0f, 1.0f,
-    this);
+    kGridSize, kGridSize, kGridSize,
+    startX, startY, startZ, 1.0f,
+    m_surface);
 
   if (!grid) {
-    HTTellText("§c[VoxelChunkBarn] Failed to create grid at (%d, %d)", pos.x, pos.z);
+    HTTellText("§c[VoxelChunkBarn] Failed to create grid at (%d, %d, %d)", pos.x, pos.y, pos.z);
     return false;
   }
 
   Voxels::Polygonizer polygonizer;
   Voxels::PolygonSurface *surface = polygonizer.Execute(*grid, &m_materialMap);
   if (!surface) {
-    HTTellText("§c[VoxelChunkBarn] Failed to polygonize chunk at (%d, %d)", pos.x, pos.z);
+    HTTellText("§c[VoxelChunkBarn] Failed to polygonize chunk at (%d, %d, %d)", pos.x, pos.y, pos.z);
     grid->Destroy();
     return false;
   }
 
-  // Only LOD 0 is rendered: 16^3 grids have a single LOD level, and mixing
-  // LOD levels requires the transition meshes that are not used here.
+  // The polygonizer returns padded-grid-local positions; shift them into
+  // world space before projection so the analytic field is evaluated at the
+  // correct global coordinates.
+  const f32 worldOffsetX = startX;
+  const f32 worldOffsetY = startZ;
+  const f32 worldOffsetZ = startY;
+
+  // Keep only the blocks that belong to the core chunk; the outer 16-voxel
+  // ring was only sampled to make the boundary cells correct.
+  const f32 minAllowed = (f32)kChunkPadding;
+  const f32 maxAllowed = (f32)(kChunkPadding + kChunkSize - 16);
+
+  std::vector<ValueNoiseVector> vertexNormals;
+  vertexNormals.reserve(VoxelChunkMesh::kMaxVertices);
+
+  // Only LOD 0 is rendered: the outer LOD levels would require transition
+  // meshes, which are not used here.
   if (surface->GetLevelsCount() > 0) {
     const u32 blockCount = (u32)surface->GetBlocksForLevelCount(0);
 
     for (u32 blockIdx = 0; blockIdx < blockCount; ++blockIdx) {
       const Voxels::BlockPolygons *block = surface->GetBlockForLevel(0, blockIdx);
       if (!block)
+        continue;
+
+      const Voxels::float3 minCorner = block->GetMinimalCorner();
+      if (minCorner.x < minAllowed || minCorner.x > maxAllowed
+        || minCorner.y < minAllowed || minCorner.y > maxAllowed
+        || minCorner.z < minAllowed || minCorner.z > maxAllowed)
         continue;
 
       Voxels::uint vtxCount = 0;
@@ -210,23 +258,40 @@ bool VoxelChunkSource::Generate(
       for (u32 i = 0; i < vertexCopy; ++i) {
         const Voxels::PolygonVertex &src = verts[i];
 
-        f32 wx = (f32)m_baseX + src.Position.x;
-        f32 wy = src.Position.y;
-        f32 wz = (f32)m_baseZ + src.Position.z;
+        f32 wx = worldOffsetX + src.Position.x;
+        f32 wy = worldOffsetY + src.Position.y;
+        f32 wz = worldOffsetZ + src.Position.z;
 
-        TerrainDepthVertex dvtx(wx, wy, wz);
         TerrainMaterialVertex mvtx(wx, wy, wz);
 
-        mvtx.a_normal = (i32)R8G8B8A8_SNORM(src.Normal.x, src.Normal.y, src.Normal.z, 1.0f);
+        // Snap the vertex to the exact zero level set and use the analytic
+        // gradient as its normal. This removes the 8-bit terraces and keeps
+        // normals continuous across chunk boundaries.
+        s_ProjectToSurface(*m_surface, &mvtx);
+        const ValueNoiseVector normal = s_SurfaceNormal(
+          *m_surface,
+          mvtx.a_position[0],
+          mvtx.a_position[1],
+          mvtx.a_position[2]);
+
+        mvtx.a_normal = (i32)R8G8B8A8_SNORM(normal.x, normal.y, normal.z, 1.0f);
         mvtx.a_light0 = 0x407F7F7F;
         mvtx.a_light1 = 0x0000FFB3;
         mvtx.a_light2 = 0xFF80FF80;
 
+        TerrainDepthVertex dvtx(
+          mvtx.a_position[0],
+          mvtx.a_position[1],
+          mvtx.a_position[2]);
+
         mesh->depthVertices.push_back(dvtx);
         mesh->materialVertices.push_back(mvtx);
+        vertexNormals.push_back(normal);
 
-        mesh->min = Vector4::minval(mesh->min, Vector4(wx, wy, wz, 0.0f));
-        mesh->max = Vector4::maxval(mesh->max, Vector4(wx, wy, wz, 0.0f));
+        mesh->min = Vector4::minval(mesh->min, Vector4(
+          mvtx.a_position[0], mvtx.a_position[1], mvtx.a_position[2], 0.0f));
+        mesh->max = Vector4::maxval(mesh->max, Vector4(
+          mvtx.a_position[0], mvtx.a_position[1], mvtx.a_position[2], 0.0f));
       }
 
       for (u32 i = 0; i + 2 < (u32)idxCount; i += 3) {
@@ -244,7 +309,13 @@ bool VoxelChunkSource::Generate(
           break;
         }
 
-        if (!s_IsFrontFacing(verts[i0], verts[i1], verts[i2]))
+        if (!s_IsFrontFacing(
+          mesh->materialVertices[baseVertex + i0],
+          mesh->materialVertices[baseVertex + i1],
+          mesh->materialVertices[baseVertex + i2],
+          vertexNormals[baseVertex + i0],
+          vertexNormals[baseVertex + i1],
+          vertexNormals[baseVertex + i2]))
           std::swap(i1, i2);
 
         mesh->indices.push_back((u16)(baseVertex + i0));
@@ -309,7 +380,7 @@ void VoxelChunkBarn::RenderData::Terminate() {
 
 void VoxelChunkBarn::ClientChunk::Initialize(
   CollisionGeoBarn *collisionGeoBarn,
-  const ChunkPos &pos
+  const VoxelChunkPos &pos
 ) {
   m_collisionGeoBarn = collisionGeoBarn;
   m_pos = pos;
@@ -412,17 +483,28 @@ void VoxelChunkBarn::ms_ChunkUpdateThread(
   VoxelChunkBarn *voxelChunkBarn
 ) {
   while (voxelChunkBarn->m_running) {
-    // Pick a chunk that still needs a mesh. The selected position is stable
-    // while the generation runs; it is looked up again before installing.
-    ChunkPos pos = {};
+    // Pick the closest chunk that still needs a mesh, so the terrain around
+    // the avatar appears before the outer ring. The selected position is
+    // stable while generation runs; it is looked up again before installing.
+    VoxelChunkPos pos = {};
     bool hasWork = false;
+    i64 bestDistance = 0;
     {
       std::shared_lock<std::shared_mutex> lock(voxelChunkBarn->m_lock);
+      const ChunkPos &center = voxelChunkBarn->m_generationCenter;
       for (auto &it: voxelChunkBarn->m_clientChunks) {
-        if (!it.second.HasMesh()) {
-          pos = it.second.GetPos();
+        if (it.second.HasMesh())
+          continue;
+
+        const VoxelChunkPos &chunkPos = it.second.GetPos();
+        const i64 dx = chunkPos.x - center.x;
+        const i64 dz = chunkPos.z - center.z;
+        const i64 distance = dx * dx + dz * dz;
+
+        if (!hasWork || distance < bestDistance) {
+          pos = chunkPos;
+          bestDistance = distance;
           hasWork = true;
-          break;
         }
       }
     }
@@ -453,8 +535,8 @@ void VoxelChunkBarn::ms_ChunkUpdateThread(
         if (generated) {
           if (mesh.truncated) {
             HTTellText(
-              "§e[VoxelChunkBarn] Chunk (%d, %d) exceeded the mesh budget and was clipped",
-              pos.x, pos.z);
+              "§e[VoxelChunkBarn] Chunk (%d, %d, %d) exceeded the mesh budget and was clipped",
+              pos.x, pos.y, pos.z);
           }
           it->second.m_mesh = std::move(mesh);
         }
@@ -540,15 +622,15 @@ void VoxelChunkBarn::OnLevelLoad(
     return;
 
   // Set chunk generator params.
-  m_seed = m_params.seed;
+  m_seed = (u32)m_params.seed;
   m_viewDistance = std::max(1u, std::min(m_params.viewDistance, kMaxViewDistance));
 
   // Force the next update to build the chunk set for the new level.
   m_lastPos = {-2147483647, -2147483647};
 
-  // Chunks within view distance + 1 may briefly coexist while the avatar
-  // moves between chunks, so size the buffers for that wider set.
-  m_chunkCapacity = ms_CountChunks(m_viewDistance + 1) + 8;
+  // Every chunk column contains a fixed number of vertical layers, and the
+  // chunk set is rebuilt exactly on movement, so this is an upper bound.
+  m_chunkCapacity = ms_CountChunks(m_viewDistance) * (u32)kVerticalChunkCount + 8;
 
   // Initialize chunk source.
   {
@@ -641,32 +723,40 @@ void VoxelChunkBarn::Update(
 
   Vector4 avatarPos = avatar->GetTransform()[3];
 
-  ChunkPos avatarChunkPos = {
-    (i32)floorf(avatarPos->x / (f32)kChunkSize),
-    (i32)floorf(avatarPos->z / (f32)kChunkSize)
-  };
+  const i32 avatarChunkX = (i32)floorf(avatarPos->x / (f32)kChunkSize);
+  const i32 avatarChunkY = (i32)floorf(avatarPos->y / (f32)kChunkSize);
+  const i32 avatarChunkZ = (i32)floorf(avatarPos->z / (f32)kChunkSize);
 
-  // Only update chunks when avatar position changes.
+  ChunkPos avatarChunkPos = {avatarChunkX, avatarChunkZ};
+
+  // Only update chunks when the horizontal avatar position changes.
   if (m_lastPos != avatarChunkPos) {
     m_lastPos = avatarChunkPos;
 
-    const i32 r = (i32)m_viewDistance;
-    std::vector<ChunkPos> chunksToUnload;
+    {
+      std::lock_guard<std::shared_mutex> lock(m_lock);
+      m_generationCenter = avatarChunkPos;
+    }
 
-    // Unload chunks.
+    const i32 r = (i32)m_viewDistance;
+    std::vector<VoxelChunkPos> chunksToUnload;
+
+    // Unload chunks outside the desired column/layer set.
     {
       std::shared_lock<std::shared_mutex> lock(m_lock);
       for (const auto &pair: m_clientChunks) {
-        const ChunkPos &chunkPos = pair.first;
-        i32 dx = chunkPos.x - avatarChunkPos.x
-          , dz = chunkPos.z - avatarChunkPos.z;
+        const VoxelChunkPos &chunkPos = pair.first;
+        i32 dx = chunkPos.x - avatarChunkX
+          , dz = chunkPos.z - avatarChunkZ;
 
-        if (dx * dx + dz * dz > (r + 1) * (r + 1))
+        if (dx * dx + dz * dz > r * r
+          || chunkPos.y < kFirstChunkY
+          || chunkPos.y > kLastChunkY)
           chunksToUnload.push_back(chunkPos);
       }
     }
 
-    for (const ChunkPos &pos: chunksToUnload)
+    for (const VoxelChunkPos &pos: chunksToUnload)
       m_RemoveClientChunk(pos);
 
     // Add chunks.
@@ -675,24 +765,30 @@ void VoxelChunkBarn::Update(
         if (dx * dx + dz * dz > r * r)
           continue;
 
-        ChunkPos chunkPos = {avatarChunkPos.x + dx, avatarChunkPos.z + dz};
+        for (i32 y = kFirstChunkY; y <= kLastChunkY; ++y) {
+          VoxelChunkPos chunkPos = {avatarChunkX + dx, y, avatarChunkZ + dz};
 
-        if (!m_IsClientChunkAdded(chunkPos))
-          m_AddClientChunk(chunkPos);
+          if (!m_IsClientChunkAdded(chunkPos))
+            m_AddClientChunk(chunkPos);
+        }
       }
     }
   }
 
   // Build collision for the chunks directly around the avatar.
   {
+    const i32 collisionChunkY = std::max(kFirstChunkY, std::min(avatarChunkY, kLastChunkY));
+
     std::lock_guard<std::shared_mutex> lock(m_lock);
     for (auto &pair: m_clientChunks) {
       auto &chunk = pair.second;
+      const VoxelChunkPos &chunkPos = chunk.GetPos();
 
-      i32 dx = chunk.GetPos().x - avatarChunkPos.x
-        , dz = chunk.GetPos().z - avatarChunkPos.z;
+      i32 dx = chunkPos.x - avatarChunkX
+        , dy = chunkPos.y - collisionChunkY
+        , dz = chunkPos.z - avatarChunkZ;
 
-      if (-1 <= dx && dx <= 1 && -1 <= dz && dz <= 1)
+      if (-1 <= dx && dx <= 1 && -1 <= dy && dy <= 1 && -1 <= dz && dz <= 1)
         chunk.BuildCollision();
       else
         chunk.RemoveCollision();
@@ -800,7 +896,7 @@ VoxelChunkSourceParams *VoxelChunkBarn::CreateParams(
 }
 
 void VoxelChunkBarn::m_AddClientChunk(
-  const ChunkPos &pos
+  const VoxelChunkPos &pos
 ) {
   std::lock_guard<std::shared_mutex> lock(m_lock);
 
@@ -812,7 +908,7 @@ void VoxelChunkBarn::m_AddClientChunk(
 }
 
 void VoxelChunkBarn::m_RemoveClientChunk(
-  const ChunkPos &pos
+  const VoxelChunkPos &pos
 ) {
   std::lock_guard<std::shared_mutex> lock(m_lock);
 
@@ -834,7 +930,7 @@ void VoxelChunkBarn::m_ClearClientChunk() {
 }
 
 bool VoxelChunkBarn::m_IsClientChunkAdded(
-  const ChunkPos &pos
+  const VoxelChunkPos &pos
 ) {
   std::shared_lock<std::shared_mutex> lock(m_lock);
   return m_clientChunks.find(pos) != m_clientChunks.end();

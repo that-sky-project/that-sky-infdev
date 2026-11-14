@@ -19,8 +19,50 @@
 #include "sky/skyVectorMath.hpp"
 #include "sky/skyCollisionGeo.hpp"
 #include "sky/skyTypePlaceholders.hpp"
-#include "world/synth/perlinNoise.hpp"
+#include "world/synth/valueNoise.hpp"
 #include "render/vertexArrayElements.hpp"
+
+// ----------------------------------------------------------------------------
+// [SECTION] VoxelChunkPos
+// ----------------------------------------------------------------------------
+
+// A voxel chunk is a cube in world space; the Y component is the vertical
+// chunk index, so the terrain can span several chunks vertically.
+struct VoxelChunkPos {
+  VoxelChunkPos() = default;
+  ~VoxelChunkPos() = default;
+
+  VoxelChunkPos(
+    i32 x,
+    i32 y,
+    i32 z
+  )
+    : x(x)
+    , y(y)
+    , z(z)
+  { }
+
+  bool operator==(const VoxelChunkPos &that) const { return x == that.x && y == that.y && z == that.z; }
+  bool operator!=(const VoxelChunkPos &that) const { return !(that == *this); }
+
+  i32 x = 0;
+  i32 y = 0;
+  i32 z = 0;
+};
+
+namespace std {
+
+template<>
+struct hash<VoxelChunkPos> {
+  size_t operator()(const VoxelChunkPos &k) const noexcept {
+    size_t h = std::hash<i32>{}(k.x);
+    h ^= std::hash<i32>{}(k.y) + 0x9e3779b9 + (h << 6) + (h >> 2);
+    h ^= std::hash<i32>{}(k.z) + 0x9e3779b9 + (h << 6) + (h >> 2);
+    return h;
+  }
+};
+
+}
 
 // ----------------------------------------------------------------------------
 // [SECTION] VoxelChunkMesh
@@ -31,8 +73,9 @@
 // generation until the chunk is unloaded.
 struct VoxelChunkMesh {
   // Hard per-chunk limits. They bound the GPU buffers allocated up-front.
-  static constexpr u32 kMaxVertices = 8192;
-  static constexpr u32 kMaxIndices = 16384;
+  // A padded 64^3 chunk normally produces fewer than ~10k vertices.
+  static constexpr u32 kMaxVertices = 12288;
+  static constexpr u32 kMaxIndices = 65535;
 
   inline bool IsEmpty() const { return indices.empty(); }
   inline void Clear() {
@@ -89,52 +132,30 @@ private:
   Voxels::MaterialMap::Material m_material = {};
 };
 
-class VoxelChunkSource: public Voxels::VoxelSurface {
+class VoxelChunkSource {
 public:
-  // Voxels per chunk axis. The voxels library works with 16^3 blocks.
-  static constexpr u32 kChunkSize = 16;
+  // Core chunk size and the one-block padding that is sampled around it.
+  // Padding makes boundary cells use the neighbouring chunk's real samples
+  // instead of the clamped edge of the grid, which removes visible cracks.
+  static constexpr u32 kChunkSize = 64;
+  static constexpr u32 kChunkPadding = 16;
+  static constexpr u32 kGridSize = kChunkSize + 2 * kChunkPadding;
 
   VoxelChunkSource() = default;
-  ~VoxelChunkSource() override = default;
+  ~VoxelChunkSource() = default;
 
-  void Initialize(i32 seed);
+  void Initialize(u32 seed);
   void Terminate();
 
   // Polygonizes the chunk at `pos` into `mesh`.
   // Returns false if the voxels library could not produce a surface.
   bool Generate(
-    const ChunkPos &pos,
+    const VoxelChunkPos &pos,
     VoxelChunkMesh *mesh);
 
-  // Voxels::VoxelSurface implementation. The grid is created with local
-  // coordinates [0, kChunkSize) and this callback maps them to world space.
-  void GetSurface(
-    float xStart,
-    float xEnd,
-    float xStep,
-    float yStart,
-    float yEnd,
-    float yStep,
-    float zStart,
-    float zEnd,
-    float zStep,
-    float *output,
-    unsigned char *materialid,
-    unsigned char *blend) override;
-
 private:
-  f32 m_SampleDensity(
-    f32 wx,
-    f32 wy,
-    f32 wz) const;
-
-  PerlinNoise *m_noise = nullptr;
+  ValueNoiseSurface *m_surface = nullptr;
   VoxelChunkMaterialMap m_materialMap = {};
-
-  // Base world coordinates of the chunk currently being generated. Grid
-  // creation is single-threaded here, so no synchronization is required.
-  i32 m_baseX = 0;
-  i32 m_baseZ = 0;
 };
 
 // ----------------------------------------------------------------------------
@@ -147,7 +168,10 @@ META_DECLARE_CLASS(VoxelChunkBarn)
 class VoxelChunkBarn: public Module {
 private:
   static constexpr u32 kChunkSize = VoxelChunkSource::kChunkSize;
-  static constexpr u32 kMaxViewDistance = 6;
+  static constexpr i32 kFirstChunkY = 0;
+  static constexpr i32 kLastChunkY = 1;
+  static constexpr i32 kVerticalChunkCount = kLastChunkY - kFirstChunkY + 1;
+  static constexpr u32 kMaxViewDistance = 4;
 
   struct RenderData {
     void Initialize(
@@ -183,20 +207,20 @@ private:
   struct ClientChunk {
     void Initialize(
       CollisionGeoBarn *collisionGeoBarn,
-      const ChunkPos &pos);
+      const VoxelChunkPos &pos);
     void Terminate();
 
     void BuildCollision();
     void RemoveCollision();
 
     inline bool HasMesh() const { return m_hasMesh; }
-    inline const ChunkPos &GetPos() const { return m_pos; }
+    inline const VoxelChunkPos &GetPos() const { return m_pos; }
 
     // Contexts.
     CollisionGeoBarn *m_collisionGeoBarn = nullptr;
 
     // Chunk data.
-    ChunkPos m_pos = {};
+    VoxelChunkPos m_pos = {};
     VoxelChunkMesh m_mesh = {};
 
     // Flags.
@@ -234,10 +258,10 @@ public:
   VoxelChunkSourceParams *CreateParams(MetaClass *mc);
 
 private:
-  void m_AddClientChunk(const ChunkPos &pos);
-  void m_RemoveClientChunk(const ChunkPos &pos);
+  void m_AddClientChunk(const VoxelChunkPos &pos);
+  void m_RemoveClientChunk(const VoxelChunkPos &pos);
   void m_ClearClientChunk();
-  bool m_IsClientChunkAdded(const ChunkPos &pos);
+  bool m_IsClientChunkAdded(const VoxelChunkPos &pos);
 
 private:
   // Multi-thread contexts.
@@ -252,8 +276,8 @@ private:
   bool m_sourceReady = false;
   bool m_voxelsReady = false;
   VoxelChunkSourceParams m_params = {};
-  i32 m_seed = 1196250184;
-  u32 m_viewDistance = 4;
+  u32 m_seed = 1337;
+  u32 m_viewDistance = 2;
   u32 m_chunkCapacity = 0;
 
   // Game contexts.
@@ -263,7 +287,10 @@ private:
 
   // Chunk data.
   ChunkPos m_lastPos = {-2147483647, -2147483647};
-  std::unordered_map<ChunkPos, ClientChunk> m_clientChunks = {};
+  // Horizontal center used by the worker to generate nearby chunks first.
+  // Guarded by m_lock.
+  ChunkPos m_generationCenter = {};
+  std::unordered_map<VoxelChunkPos, ClientChunk> m_clientChunks = {};
 
   // Render data.
   RenderData m_depth = {};

@@ -2,7 +2,7 @@
   "O$WorldGenParams": {
     "$type": "VoxelChunkSourceParams",
     "seed": 5201314,
-    "viewDistance": 4
+    "viewDistance": 2
   },
   "O$InfiniteEnergy": {
     "$type": "AvatarSetEnergy",
@@ -40,7 +40,7 @@
     },
     "pos": {
       "x": 0,
-      "y": 25,
+      "y": 120,
       "z": 0
     }
   },
