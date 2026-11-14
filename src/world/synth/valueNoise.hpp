@@ -276,8 +276,9 @@ private:
     f32 z,
     f32 baseHeight
   ) const {
-    // Keep the octave count and frequencies low enough for the 96^3 grid:
-    // high-frequency terms only add voxel-scale noise and visible faceting.
+    // Keep the octave count and frequencies low enough for the padded
+    // 48^3 grid: high-frequency terms only add voxel-scale noise and visible
+    // faceting.
     const f32 large = m_noise.Fbm3(
       x * 0.014f + 3.1f,
       y * 0.014f - 5.7f,

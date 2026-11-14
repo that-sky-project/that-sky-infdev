@@ -73,9 +73,9 @@ struct hash<VoxelChunkPos> {
 // generation until the chunk is unloaded.
 struct VoxelChunkMesh {
   // Hard per-chunk limits. They bound the GPU buffers allocated up-front.
-  // A padded 64^3 chunk normally produces fewer than ~10k vertices.
-  static constexpr u32 kMaxVertices = 12288;
-  static constexpr u32 kMaxIndices = 65535;
+  // A padded 16^3 chunk normally produces fewer than ~600 vertices.
+  static constexpr u32 kMaxVertices = 3072;
+  static constexpr u32 kMaxIndices = 12288;
 
   inline bool IsEmpty() const { return indices.empty(); }
   inline void Clear() {
@@ -137,7 +137,7 @@ public:
   // Core chunk size and the one-block padding that is sampled around it.
   // Padding makes boundary cells use the neighbouring chunk's real samples
   // instead of the clamped edge of the grid, which removes visible cracks.
-  static constexpr u32 kChunkSize = 64;
+  static constexpr u32 kChunkSize = 16;
   static constexpr u32 kChunkPadding = 16;
   static constexpr u32 kGridSize = kChunkSize + 2 * kChunkPadding;
 
@@ -168,10 +168,12 @@ META_DECLARE_CLASS(VoxelChunkBarn)
 class VoxelChunkBarn: public Module {
 private:
   static constexpr u32 kChunkSize = VoxelChunkSource::kChunkSize;
+  // The value-noise terrain lives roughly in world Y 0..128, so with 16-high
+  // chunks the vertical range covers 0..7.
   static constexpr i32 kFirstChunkY = 0;
-  static constexpr i32 kLastChunkY = 1;
+  static constexpr i32 kLastChunkY = 7;
   static constexpr i32 kVerticalChunkCount = kLastChunkY - kFirstChunkY + 1;
-  static constexpr u32 kMaxViewDistance = 4;
+  static constexpr u32 kMaxViewDistance = 16;
 
   struct RenderData {
     void Initialize(
@@ -277,7 +279,7 @@ private:
   bool m_voxelsReady = false;
   VoxelChunkSourceParams m_params = {};
   u32 m_seed = 1337;
-  u32 m_viewDistance = 2;
+  u32 m_viewDistance = 4;
   u32 m_chunkCapacity = 0;
 
   // Game contexts.

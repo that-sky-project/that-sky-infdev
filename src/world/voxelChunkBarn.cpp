@@ -28,8 +28,8 @@ META_REGISTER_SIMPLE_MEMBER(VoxelChunkSourceParams, seed)
 META_DATA_MEMBER_VARIABLE(VoxelChunkSourceParams, seed, Tool_DefaultValue, "1337")
 
 META_REGISTER_SIMPLE_MEMBER(VoxelChunkSourceParams, viewDistance)
-META_DATA_MEMBER_VARIABLE(VoxelChunkSourceParams, viewDistance, Tool_DefaultValue, "2")
-META_DATA_MEMBER_VARIABLE(VoxelChunkSourceParams, viewDistance, Tool_MinMaxValues, "(1, 4)")
+META_DATA_MEMBER_VARIABLE(VoxelChunkSourceParams, viewDistance, Tool_DefaultValue, "4")
+META_DATA_MEMBER_VARIABLE(VoxelChunkSourceParams, viewDistance, Tool_MinMaxValues, "(1, 16)")
 
 // ----------------------------------------------------------------------------
 // [SECTION] VoxelChunkSource
@@ -439,8 +439,6 @@ void VoxelChunkBarn::ClientChunk::BuildCollision() {
   m_geoInst = m_collisionGeoBarn->AddInstance(m_geoIdx, transform, instData, nullptr);
 
   m_hasBuiltGeo = true;
-
-  HTTellText("§a[VoxelChunkBarn] (%d, %d)", m_pos.x, m_pos.z);
 }
 
 void VoxelChunkBarn::ClientChunk::RemoveCollision() {
